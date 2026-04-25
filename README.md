@@ -1,4 +1,4 @@
-# Repeat Hello World Repo
+# Mouse Driver
 
-- Simple repo that utilizes the Hello World library via CMake's fetchcontent
-- Serves as an example of a project that has a dependency on another project
+- Libraries to drive a micromouse including navigation, hardware fault detection, servicing any user request, etc
+- Dependent on a device drivers layer

@@ -1,11 +1,11 @@
 /*-------------------------------- FILE INFO ---------------------------------*/
-/* Filename           : repeat_hello_world.h                                  */
+/* Filename           : fault_detector.h                                      */
 /*                                                                            */
-/* Interface w/ a function to repeat Hello World                              */
+/* Interface for fault_detector library                                       */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-#ifndef REPEAT_HELLO_WORLD_H_
-#define REPEAT_HELLO_WORLD_H_
+#ifndef FAULT_DETECTOR_H_
+#define FAULT_DETECTOR_H_
 
 /*----------------------------------------------------------------------------*/
 /*                             Public Definitions                             */
@@ -15,6 +15,6 @@
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
-void print_hello_world_twice(void);
 
-#endif /* REPEAT_HELLO_WORLD_H_ */
+
+#endif /* FAULT_DETECTOR_H_ */

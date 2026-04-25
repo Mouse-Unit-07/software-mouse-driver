@@ -5,18 +5,20 @@
 #                                                                              #
 #------------------------------------------------------------------------------#
 cmake_minimum_required(VERSION 4.0.2)
-project(repeat_hello_world_project LANGUAGES C) # <== Name your software project
+project(mouse_driver_project LANGUAGES C)
 
 include(FetchContent)
 
-# \/=== Add dependencies to other GitHub repos
-# Example dependency on Hello World project:
 FetchContent_Declare(
-    print_hello_world
-    GIT_REPOSITORY git@github.com:Mouse-Unit-07/experiment-software-hello-world.git
+    device_drivers
+    GIT_REPOSITORY git@github.com:Mouse-Unit-07/software-device-drivers.git
     GIT_TAG main
 )
-FetchContent_MakeAvailable(print_hello_world)
+FetchContent_MakeAvailable(device_drivers)
 
-# \/=== Add all library directories (each w/ a CMakeLists.txt)
-add_subdirectory(repeat_hello_world)
+add_subdirectory(device_self_tests)
+add_subdirectory(fault_detector)
+add_subdirectory(initialization)
+add_subdirectory(navigation)
+add_subdirectory(timer)
+add_subdirectory(user_request)
