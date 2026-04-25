@@ -1,19 +1,25 @@
 /*================================ FILE INFO =================================*/
-/* Filename           : test_repeat_hello_world.cpp                           */
+/* Filename           : test_timer.cpp                                        */
 /*                                                                            */
-/* Test implementation for repeat_hello_world.c                               */
+/* Test implementation for timer.c                                            */
 /*                                                                            */
 /*============================================================================*/
 
 /*============================================================================*/
 /*                               Include Files                                */
 /*============================================================================*/
-extern "C" {
-#include "repeat_hello_world.h"
+extern "C"
+{
+
 }
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTestExt/MockSupport.h>
+
+/*============================================================================*/
+/*                            Mock Implementations                            */
+/*============================================================================*/
+/* none */
 
 /*============================================================================*/
 /*                             Public Definitions                             */
@@ -21,35 +27,25 @@ extern "C" {
 /* none */
 
 /*============================================================================*/
-/*                            Mock Implementations                            */
-/*============================================================================*/
-extern "C" void print_hello_world(void)
-{
-    mock().actualCall("print_hello_world");
-}
-
-/*============================================================================*/
 /*                                 Test Group                                 */
 /*============================================================================*/
-TEST_GROUP(RepeatHelloWorldTests)
+TEST_GROUP(TimerTests)
 {
     void setup() override
     {
-        mock().clear();
+
     }
 
     void teardown() override
     {
-        mock().checkExpectations();
-        mock().clear();
+
     }
 };
 
 /*============================================================================*/
 /*                                    Tests                                   */
 /*============================================================================*/
-TEST(RepeatHelloWorldTests, CallsPrintTwice)
+TEST(TimerTests, DeleteMe)
 {
-    mock().expectNCalls(2, "print_hello_world");
-    print_hello_world_twice();
+
 }
