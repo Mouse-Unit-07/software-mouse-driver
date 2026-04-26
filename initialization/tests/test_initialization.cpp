@@ -28,6 +28,11 @@ void init_processor(void)
     mock().actualCall("init_processor");
 }
 
+void deinit_processor(void)
+{
+    mock().actualCall("deinit_processor");
+}
+
 /*============================================================================*/
 /*                             Public Definitions                             */
 /*============================================================================*/
@@ -57,4 +62,10 @@ TEST(InitializationTests, InitCallsFunctions)
 {
     mock().expectOneCall("init_processor");
     init_mouse();
+}
+
+TEST(InitializationTests, DeinitCallsFunctions)
+{
+    mock().expectOneCall("deinit_processor");
+    deinit_mouse();
 }

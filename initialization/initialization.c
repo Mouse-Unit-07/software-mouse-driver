@@ -31,6 +31,7 @@ void init_mouse(void)
 
 void deinit_mouse(void)
 {
+    deinit_processor();
 }
 
 /*----------------------------------------------------------------------------*/
