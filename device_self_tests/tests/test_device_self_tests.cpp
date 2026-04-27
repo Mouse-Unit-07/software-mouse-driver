@@ -79,6 +79,17 @@ void set_led_d4_enabled(bool enabled)
         .withBoolParameter("enabled", enabled);
 }
 
+uint32_t get_pushbutton_count(void)
+{
+    return mock().actualCall("get_pushbutton_count")
+        .returnUnsignedIntValue();
+}
+
+void clear_pushbutton_count(void)
+{
+    mock().actualCall("clear_pushbutton_count");
+}
+
 }
 
 /*============================================================================*/
@@ -95,7 +106,7 @@ void redirect_stdout_to_file(void)
 
 void check_printf_output(const char *expected_string)
 {
-    constexpr std::size_t MAX_BUFFER_SIZE{128};
+    constexpr std::size_t MAX_BUFFER_SIZE{1024};
     std::array<char, MAX_BUFFER_SIZE> buffer{};
 
     FILE* file{fopen(TEST_FILE, "r")};
@@ -235,4 +246,27 @@ TEST(DeviceSelfTestsTests, LedTestTogglesLeds)
     mock().expectOneCall("delay_ms");
 
     led_test();
+}
+
+TEST(DeviceSelfTestsTests, PushbuttonTestPrintsCount)
+{
+    for (int i{0}; i < 5; i++) {
+        mock().expectOneCall("get_pushbutton_count")
+            .andReturnValue(0);
+        mock().expectOneCall("delay_ms");
+    }
+    mock().expectOneCall("clear_pushbutton_count");
+    mock().expectOneCall("get_pushbutton_count")
+        .andReturnValue(0);
+
+    redirect_stdout_to_file();
+    pushbutton_test();
+    fflush(stdout);
+    restore_stdout();
+    check_printf_output("pushbutton count: 0\r\n"
+                        "pushbutton count: 0\r\n"
+                        "pushbutton count: 0\r\n"
+                        "pushbutton count: 0\r\n"
+                        "pushbutton count: 0\r\n"
+                        "cleared pushbutton count: 0\r\n");
 }

@@ -8,6 +8,7 @@
 /*----------------------------------------------------------------------------*/
 /*                               Include Files                                */
 /*----------------------------------------------------------------------------*/
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include "battery_comparator.h"
 #include "power_enabler.h"
 #include "led.h"
+#include "pushbutton.h"
 
 /*----------------------------------------------------------------------------*/
 /*                         Private Function Prototypes                        */
@@ -90,6 +92,16 @@ void led_test(void)
     set_led_d3_enabled(false);
     set_led_d4_enabled(false);
     delay_ms(1000);
+}
+
+void pushbutton_test(void)
+{
+    for (uint32_t i = 0u; i < 5; i++) {
+        printf("pushbutton count: %" PRIu32 "\r\n", get_pushbutton_count());
+        delay_ms(1000);
+    }
+    clear_pushbutton_count();
+    printf("cleared pushbutton count: %" PRIu32 "\r\n", get_pushbutton_count());
 }
 
 /*----------------------------------------------------------------------------*/
