@@ -39,6 +39,22 @@ void delay_us(uint32_t delay_time)
     mock().actualCall("delay_us");
 }
 
+void enable_power(void)
+{
+    mock().actualCall("enable_power");
+}
+
+void disable_power(void)
+{
+    mock().actualCall("disable_power");
+}
+
+bool is_battery_low(void)
+{
+    return mock().actualCall("is_battery_low")
+        .returnBoolValue();
+}
+
 }
 
 /*============================================================================*/
@@ -115,4 +131,59 @@ TEST(DeviceSelfTestsTests, ProcessorTestsPrintsHelloWorldAndDelays)
     fflush(stdout);
     restore_stdout();
     check_printf_output("Hello World\r\nKonnichiwa Sekai\r\n");
+}
+
+TEST(DeviceSelfTestsTests, BatteryComparatorTestPrintsOnGoodBattery)
+{
+    mock().expectOneCall("enable_power");
+    mock().expectOneCall("is_battery_low")
+        .andReturnValue(false);
+    mock().expectOneCall("delay_ms");
+
+    mock().expectOneCall("disable_power");
+    mock().expectOneCall("is_battery_low")
+        .andReturnValue(false);
+    mock().expectOneCall("delay_ms");
+
+    redirect_stdout_to_file();
+    battery_comparator_test();
+    fflush(stdout);
+    restore_stdout();
+    check_printf_output("power enabled\r\nBattery is not low\r\n"
+                        "power disabled\r\nBattery is not low\r\n");
+}
+
+TEST(DeviceSelfTestsTests, BatteryComparatorTestPrintsOnBadBattery)
+{
+    mock().expectOneCall("enable_power");
+    mock().expectOneCall("is_battery_low")
+        .andReturnValue(true);
+    mock().expectOneCall("delay_ms");
+
+    mock().expectOneCall("disable_power");
+    mock().expectOneCall("is_battery_low")
+        .andReturnValue(true);
+    mock().expectOneCall("delay_ms");
+
+    redirect_stdout_to_file();
+    battery_comparator_test();
+    fflush(stdout);
+    restore_stdout();
+    check_printf_output("power enabled\r\nBattery is low\r\n"
+                        "power disabled\r\nBattery is low\r\n");
+}
+
+TEST(DeviceSelfTestsTests, PowerEnablerTestPrintsAndDelays)
+{
+    mock().expectOneCall("enable_power");
+    mock().expectOneCall("delay_ms");
+
+    mock().expectOneCall("disable_power");
+    mock().expectOneCall("delay_ms");
+
+    redirect_stdout_to_file();
+    power_enabler_test();
+    fflush(stdout);
+    restore_stdout();
+    check_printf_output("power enabled\r\npower disabled\r\n");
 }
