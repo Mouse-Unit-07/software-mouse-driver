@@ -39,6 +39,8 @@ void processor_test(void)
 {
     printf("Hello World\r\n");
     delay_ms(1000);
+    printf("Konnichiwa Sekai\r\n");
+    delay_us(1000000);
 }
 
 /*----------------------------------------------------------------------------*/

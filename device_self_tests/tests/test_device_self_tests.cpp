@@ -26,9 +26,19 @@ extern "C"
 /*============================================================================*/
 /*                            Mock Implementations                            */
 /*============================================================================*/
+extern "C"
+{
+
 void delay_ms(uint32_t delay_time)
 {
     mock().actualCall("delay_ms");
+}
+
+void delay_us(uint32_t delay_time)
+{
+    mock().actualCall("delay_us");
+}
+
 }
 
 /*============================================================================*/
@@ -98,10 +108,11 @@ TEST(DeviceSelfTestsTests, DeinitDeviceSelfTests)
 TEST(DeviceSelfTestsTests, ProcessorTestsPrintsHelloWorldAndDelays)
 {
     mock().expectOneCall("delay_ms");
+    mock().expectOneCall("delay_us");
 
     redirect_stdout_to_file();
     processor_test();
     fflush(stdout);
     restore_stdout();
-    check_printf_output("Hello World\r\n");
+    check_printf_output("Hello World\r\nKonnichiwa Sekai\r\n");
 }
