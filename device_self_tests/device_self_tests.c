@@ -14,6 +14,7 @@
 #include "processor.h"
 #include "battery_comparator.h"
 #include "power_enabler.h"
+#include "led.h"
 
 /*----------------------------------------------------------------------------*/
 /*                         Private Function Prototypes                        */
@@ -75,6 +76,20 @@ void power_enabler_test(void)
     disable_power();
     printf("power disabled\r\n");
     delay_ms(10000);
+}
+
+void led_test(void)
+{
+    set_led_d1_enabled(true);
+    set_led_d2_enabled(true);
+    set_led_d3_enabled(true);
+    set_led_d4_enabled(true);
+    delay_ms(1000);
+    set_led_d1_enabled(false);
+    set_led_d2_enabled(false);
+    set_led_d3_enabled(false);
+    set_led_d4_enabled(false);
+    delay_ms(1000);
 }
 
 /*----------------------------------------------------------------------------*/

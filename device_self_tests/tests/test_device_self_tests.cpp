@@ -55,6 +55,30 @@ bool is_battery_low(void)
         .returnBoolValue();
 }
 
+void set_led_d1_enabled(bool enabled)
+{
+    mock().actualCall("set_led_d1_enabled")
+        .withBoolParameter("enabled", enabled);
+}
+
+void set_led_d2_enabled(bool enabled)
+{
+    mock().actualCall("set_led_d2_enabled")
+        .withBoolParameter("enabled", enabled);
+}
+
+void set_led_d3_enabled(bool enabled)
+{
+    mock().actualCall("set_led_d3_enabled")
+        .withBoolParameter("enabled", enabled);
+}
+
+void set_led_d4_enabled(bool enabled)
+{
+    mock().actualCall("set_led_d4_enabled")
+        .withBoolParameter("enabled", enabled);
+}
+
 }
 
 /*============================================================================*/
@@ -186,4 +210,29 @@ TEST(DeviceSelfTestsTests, PowerEnablerTestPrintsAndDelays)
     fflush(stdout);
     restore_stdout();
     check_printf_output("power enabled\r\npower disabled\r\n");
+}
+
+TEST(DeviceSelfTestsTests, LedTestTogglesLeds)
+{
+    mock().expectOneCall("set_led_d1_enabled")
+        .withBoolParameter("enabled", true);
+    mock().expectOneCall("set_led_d2_enabled")
+        .withBoolParameter("enabled", true);
+    mock().expectOneCall("set_led_d3_enabled")
+        .withBoolParameter("enabled", true);
+    mock().expectOneCall("set_led_d4_enabled")
+        .withBoolParameter("enabled", true);
+    mock().expectOneCall("delay_ms");
+
+    mock().expectOneCall("set_led_d1_enabled")
+        .withBoolParameter("enabled", false);
+    mock().expectOneCall("set_led_d2_enabled")
+        .withBoolParameter("enabled", false);
+    mock().expectOneCall("set_led_d3_enabled")
+        .withBoolParameter("enabled", false);
+    mock().expectOneCall("set_led_d4_enabled")
+        .withBoolParameter("enabled", false);
+    mock().expectOneCall("delay_ms");
+
+    led_test();
 }
