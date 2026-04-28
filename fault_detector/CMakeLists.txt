@@ -22,4 +22,5 @@ target_link_libraries(fault_detector_lib PUBLIC
     pushbutton_lib
     vacuum_lib
     wheel_motor_lib
+    runtime_diagnostics_lib
 )

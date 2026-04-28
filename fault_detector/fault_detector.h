@@ -15,6 +15,9 @@
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
-
+void init_fault_detector(void);
+void deinit_fault_detector(void);
+bool is_there_hardware_fault(void);
+void print_hardware_state(void);
 
 #endif /* FAULT_DETECTOR_H_ */
