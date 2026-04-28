@@ -1,11 +1,11 @@
 /*-------------------------------- FILE INFO ---------------------------------*/
-/* Filename           : timer.h                                               */
+/* Filename           : global_time.h                                         */
 /*                                                                            */
-/* Interface for timer library                                                */
+/* Interface for global_time library                                          */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-#ifndef TIMER_H_
-#define TIMER_H_
+#ifndef GLOBAL_TIME_H_
+#define GLOBAL_TIME_H_
 
 /*----------------------------------------------------------------------------*/
 /*                             Public Definitions                             */
@@ -15,6 +15,10 @@
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
+void init_global_time(void);
+void deinit_global_time(void);
+void restart_global_time(void);
+uint32_t get_current_global_time_sec(void);
+uint32_t get_elapsed_global_time_sec(uint32_t start_time_sec);
 
-
-#endif /* TIMER_H_ */
+#endif /* GLOBAL_TIME_H_ */
