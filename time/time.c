@@ -1,7 +1,7 @@
 /*-------------------------------- FILE INFO ---------------------------------*/
-/* Filename           : timer.c                                               */
+/* Filename           : time.c                                                */
 /*                                                                            */
-/* Implementation for timer library                                           */
+/* Implementation for time library                                            */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
