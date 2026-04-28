@@ -8,7 +8,8 @@
 /*----------------------------------------------------------------------------*/
 /*                               Include Files                                */
 /*----------------------------------------------------------------------------*/
-
+#include <stdint.h>
+#include "pushbutton.h"
 
 /*----------------------------------------------------------------------------*/
 /*                         Private Function Prototypes                        */
@@ -20,11 +21,28 @@
 /*----------------------------------------------------------------------------*/
 /* none */
 
-
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
 /*----------------------------------------------------------------------------*/
+void init_user_request(void)
+{
+    /* nothing to init */
+}
 
+void deinit_user_request(void)
+{
+    /* nothing to clear/reset */
+}
+
+uint32_t get_user_request(void)
+{
+    return get_pushbutton_count();
+}
+
+void clear_user_request(void)
+{
+    clear_pushbutton_count();
+}
 
 /*----------------------------------------------------------------------------*/
 /*                        Private Function Definitions                        */
