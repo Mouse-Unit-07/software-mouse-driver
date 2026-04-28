@@ -1,7 +1,7 @@
 /*-------------------------------- FILE INFO ---------------------------------*/
-/* Filename           : time.h                                                */
+/* Filename           : global_time.h                                         */
 /*                                                                            */
-/* Interface for time library                                                 */
+/* Interface for global_time library                                          */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 #ifndef TIME_H_
@@ -15,6 +15,10 @@
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
-
+void init_global_time(void);
+void deinit_global_time(void);
+void restart_global_time(void);
+uint32_t get_current_global_time_sec(void);
+uint32_t get_elapsed_global_time_sec(uint32_t start_time_sec);
 
 #endif /* TIME_H_ */

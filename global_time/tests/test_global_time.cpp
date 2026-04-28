@@ -1,7 +1,7 @@
 /*================================ FILE INFO =================================*/
-/* Filename           : test_time.cpp                                        */
+/* Filename           : test_global_time.cpp                                  */
 /*                                                                            */
-/* Test implementation for time.c                                            */
+/* Test implementation for global_time.c                                      */
 /*                                                                            */
 /*============================================================================*/
 
@@ -11,15 +11,38 @@
 extern "C"
 {
 
+#include <stdint.h>
+#include "global_time.h"
+
 }
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTestExt/MockSupport.h>
+#include <cstdint>
 
 /*============================================================================*/
 /*                            Mock Implementations                            */
 /*============================================================================*/
-/* none */
+extern "C"
+{
+
+void start_timer(void)
+{
+    mock().actualCall("start_timer");
+}
+
+void reset_timer(void)
+{
+    mock().actualCall("reset_timer");
+}
+
+uint32_t get_current_time_ms(void)
+{
+    return mock().actualCall("get_current_time_ms")
+        .returnUnsignedIntValue();
+}
+
+}
 
 /*============================================================================*/
 /*                             Public Definitions                             */
@@ -29,23 +52,58 @@ extern "C"
 /*============================================================================*/
 /*                                 Test Group                                 */
 /*============================================================================*/
-TEST_GROUP(TimeTests)
+TEST_GROUP(GlobalTimeTests)
 {
     void setup() override
     {
-
+        mock().clear();
     }
 
     void teardown() override
     {
-
+        mock().checkExpectations();
+        mock().clear();
     }
 };
 
 /*============================================================================*/
 /*                                    Tests                                   */
 /*============================================================================*/
-TEST(TimeTests, DeleteMe)
+TEST(GlobalTimeTests, InitStartsTimer)
 {
+    mock().expectOneCall("start_timer");
+    init_global_time();
+}
 
+TEST(GlobalTimeTests, DeinitResetsTimer)
+{
+    mock().expectOneCall("reset_timer");
+    deinit_global_time();
+}
+
+TEST(GlobalTimeTests, RestartResetsTimer)
+{
+    mock().expectOneCall("reset_timer");
+    deinit_global_time();
+}
+
+TEST(GlobalTimeTests, GetCurrentTimeSecFetchesTimeAndDividesMs)
+{
+    mock().expectOneCall("get_current_time_ms")
+        .andReturnValue(5000u);
+    CHECK(get_current_global_time_sec() == 5u);
+}
+
+TEST(GlobalTimeTests, GetElapsedTimeSecReturnsDifference)
+{
+    mock().expectOneCall("get_current_time_ms")
+        .andReturnValue(5000u);
+    CHECK(get_elapsed_global_time_sec(2u) == 3u);
+}
+
+TEST(GlobalTimeTests, GetElapsedTimeSecDoesNotReturnNegativeValues)
+{
+    mock().expectOneCall("get_current_time_ms")
+        .andReturnValue(3000u);
+    CHECK(get_elapsed_global_time_sec(5000) == 0u);
 }
