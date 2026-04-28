@@ -4,8 +4,8 @@
 /* Interface for global_time library                                          */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
-#ifndef TIME_H_
-#define TIME_H_
+#ifndef GLOBAL_TIME_H_
+#define GLOBAL_TIME_H_
 
 /*----------------------------------------------------------------------------*/
 /*                             Public Definitions                             */
@@ -21,4 +21,4 @@ void restart_global_time(void);
 uint32_t get_current_global_time_sec(void);
 uint32_t get_elapsed_global_time_sec(uint32_t start_time_sec);
 
-#endif /* TIME_H_ */
+#endif /* GLOBAL_TIME_H_ */
