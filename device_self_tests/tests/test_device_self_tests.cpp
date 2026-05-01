@@ -220,14 +220,26 @@ TEST(DeviceSelfTestsTests, DeinitDeviceSelfTests)
 
 TEST(DeviceSelfTestsTests, ProcessorTestsPrintsHelloWorldAndDelays)
 {
+    mock().expectOneCall("start_timer");
+    mock().expectOneCall("get_current_time_ms")
+        .andReturnValue(0);
     mock().expectOneCall("delay_ms");
+    mock().expectOneCall("get_current_time_ms")
+        .andReturnValue(1000);
+    mock().expectOneCall("reset_timer");
     mock().expectOneCall("delay_us");
+    mock().expectOneCall("get_current_time_ms")
+        .andReturnValue(1000);
 
     redirect_stdout_to_file();
     processor_test();
     fflush(stdout);
     restore_stdout();
-    check_printf_output("Hello World\r\nKonnichiwa Sekai\r\n");
+    check_printf_output("time: 0ms\r\n"
+                        "Hello World\r\n"
+                        "time: 1000ms... resetting timer\r\n"
+                        "Konnichiwa Sekai\r\n"
+                        "time: 1000ms\r\n");
 }
 
 TEST(DeviceSelfTestsTests, BatteryComparatorTestPrintsOnGoodBattery)

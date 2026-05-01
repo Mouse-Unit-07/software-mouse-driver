@@ -48,10 +48,15 @@ void deinit_device_self_tests(void)
 
 void processor_test(void)
 {
+    start_timer();
+    printf("time: %" PRIu32 "ms\r\n", get_current_time_ms());
     printf("Hello World\r\n");
     delay_ms(1000);
+    printf("time: %" PRIu32 "ms... resetting timer\r\n", get_current_time_ms());
+    reset_timer();
     printf("Konnichiwa Sekai\r\n");
     delay_us(1000000);
+    printf("time: %" PRIu32 "ms\r\n", get_current_time_ms());
 }
 
 void battery_comparator_test(void)
