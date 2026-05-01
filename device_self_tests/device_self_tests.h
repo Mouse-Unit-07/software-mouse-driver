@@ -22,5 +22,8 @@ void battery_comparator_test(void);
 void power_enabler_test(void);
 void led_test(void);
 void pushbutton_test(void);
+void infrared_sensors_distance_test(uint32_t trials_per_distance);
+void infrared_sensors_free_reading_test(void);
+void infrared_sensors_read_speed_test(void);
 
 #endif /* DEVICE_SELF_TESTS_H_ */
