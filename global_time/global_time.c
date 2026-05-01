@@ -55,6 +55,16 @@ uint32_t get_elapsed_global_time_sec(uint32_t start_time_sec)
     return current_time_sec - start_time_sec;
 }
 
+void delay_global_time_ms(uint32_t delay_time)
+{
+    delay_ms(delay_time);
+}
+
+void delay_global_time_us(uint32_t delay_time)
+{
+    delay_us(delay_time);
+}
+
 /*----------------------------------------------------------------------------*/
 /*                        Private Function Definitions                        */
 /*----------------------------------------------------------------------------*/

@@ -20,5 +20,7 @@ void deinit_global_time(void);
 void restart_global_time(void);
 uint32_t get_current_global_time_sec(void);
 uint32_t get_elapsed_global_time_sec(uint32_t start_time_sec);
+void delay_global_time_ms(uint32_t delay_time);
+void delay_global_time_us(uint32_t delay_time);
 
 #endif /* GLOBAL_TIME_H_ */

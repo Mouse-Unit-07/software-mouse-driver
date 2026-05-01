@@ -42,6 +42,18 @@ uint32_t get_current_time_ms(void)
         .returnUnsignedIntValue();
 }
 
+void delay_ms(uint32_t delay_time)
+{
+    mock().actualCall("delay_ms")
+        .withUnsignedIntParameter("delay_time", delay_time);
+}
+
+void delay_us(uint32_t delay_time)
+{
+    mock().actualCall("delay_us")
+        .withUnsignedIntParameter("delay_time", delay_time);
+}
+
 }
 
 /*============================================================================*/
@@ -106,4 +118,18 @@ TEST(GlobalTimeTests, GetElapsedTimeSecDoesNotReturnNegativeValues)
     mock().expectOneCall("get_current_time_ms")
         .andReturnValue(3000u);
     CHECK(get_elapsed_global_time_sec(5000) == 0u);
+}
+
+TEST(GlobalTimeTests, DelayMsCallsFunction)
+{
+    mock().expectOneCall("delay_ms")
+        .withParameter("delay_time", 1000);
+    delay_global_time_ms(1000);
+}
+
+TEST(GlobalTimeTests, DelayUsCallsFunction)
+{
+    mock().expectOneCall("delay_us")
+        .withParameter("delay_time", 1000);
+    delay_global_time_us(1000);
 }
