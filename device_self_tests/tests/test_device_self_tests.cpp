@@ -166,6 +166,13 @@ void fake_clear_ticks(void)
     fake_ticks = 0;
 }
 
+/* ---------------------------------------------------------------------------*/
+/* vacuum mocks */
+void set_vacuum_speed(uint8_t speed)
+{
+    mock().actualCall("set_vacuum_speed");
+}
+
 }
 
 /*============================================================================*/
@@ -490,4 +497,16 @@ TEST(DeviceSelfTestsTests, MoveUntilEncoderCountBreaksOnTimeout)
     mock().expectNCalls(1, "delay_ms");
 
     move_until_encoder_count(ENCODER_COUNT, 100, fake_set_speed, fake_get_ticks_no_movement, fake_clear_ticks);
+}
+
+TEST(DeviceSelfTestsTests, VacuumTestCallsFunctions)
+{
+    mock().expectOneCall("enable_power");
+    for (uint8_t motor_speed = 0u; motor_speed < 255; motor_speed++) {
+        mock().expectOneCall("set_vacuum_speed");
+        mock().expectOneCall("delay_ms");
+    }
+    mock().expectOneCall("disable_power");
+
+    vacuum_test();
 }
