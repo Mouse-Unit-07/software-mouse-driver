@@ -26,4 +26,10 @@ void infrared_sensors_distance_test(uint32_t trials_per_distance);
 void infrared_sensors_free_reading_test(void);
 void infrared_sensors_read_speed_test(void);
 
+/* helper exposed for testing */
+void move_until_encoder_count(int32_t encoder_count, uint8_t speed, void (*set_speed)(uint8_t),
+                              int32_t (*get_ticks)(void), void (*clear_ticks)(void));
+
+void wheel_motor_and_encoder_test(void);
+
 #endif /* DEVICE_SELF_TESTS_H_ */

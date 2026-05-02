@@ -61,6 +61,11 @@ void init_magnetic_encoders(void)
     mock().actualCall("init_magnetic_encoders");
 }
 
+void init_wheel_motors(void)
+{
+    mock().actualCall("init_wheel_motors");
+}
+
 void init_vacuum(void)
 {
     mock().actualCall("init_vacuum");
@@ -99,6 +104,11 @@ void deinit_infrared_sensors(void)
 void deinit_magnetic_encoders(void)
 {
     mock().actualCall("deinit_magnetic_encoders");
+}
+
+void deinit_wheel_motors(void)
+{
+    mock().actualCall("deinit_wheel_motors");
 }
 
 void deinit_vacuum(void)
@@ -142,6 +152,7 @@ TEST(InitializationTests, InitCallsFunctions)
     mock().expectOneCall("init_pushbutton");
     mock().expectOneCall("init_infrared_sensors");
     mock().expectOneCall("init_magnetic_encoders");
+    mock().expectOneCall("init_wheel_motors");
     mock().expectOneCall("init_vacuum");
     init_mouse();
 }
@@ -149,6 +160,7 @@ TEST(InitializationTests, InitCallsFunctions)
 TEST(InitializationTests, DeinitCallsFunctions)
 {
     mock().expectOneCall("deinit_vacuum");
+    mock().expectOneCall("deinit_wheel_motors");
     mock().expectOneCall("deinit_magnetic_encoders");
     mock().expectOneCall("deinit_infrared_sensors");
     mock().expectOneCall("deinit_pushbutton");
