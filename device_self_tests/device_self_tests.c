@@ -18,11 +18,13 @@
 #include "led.h"
 #include "pushbutton.h"
 #include "infrared_sensor.h"
+#include "wheel_motor.h"
+#include "magnetic_encoder.h"
 
 /*----------------------------------------------------------------------------*/
 /*                         Private Function Prototypes                        */
 /*----------------------------------------------------------------------------*/
-/* none */
+static int32_t abs(int32_t n);
 
 /*----------------------------------------------------------------------------*/
 /*                               Private Globals                              */
@@ -201,7 +203,80 @@ void infrared_sensors_read_speed_test(void)
     disable_power();
 }
 
+void move_until_encoder_count(int32_t encoder_count, uint8_t speed, void (*set_speed)(uint8_t),
+                              int32_t (*get_ticks)(void), void (*clear_ticks)(void))
+{
+    const uint32_t TIME_LIMIT_MS = 2000u;
+    const uint32_t DRIFT_TIME_MS = 500u;
+
+    uint32_t start_time_ms = get_current_time_ms();;
+    clear_ticks();
+    uint32_t prev_ticks = get_ticks();
+    while (abs(get_ticks()) < abs(encoder_count)) {
+        set_speed(speed);
+        uint32_t current_ticks = get_ticks();
+        if (((get_current_time_ms() - start_time_ms) > TIME_LIMIT_MS)
+            && (current_ticks == prev_ticks)) {
+            break;
+        }
+        prev_ticks = current_ticks;
+    }
+    set_speed(0u);
+    uint32_t end_time_ms = get_current_time_ms();
+    delay_ms(DRIFT_TIME_MS);
+    printf("%" PRId32 ", %" PRIu32 "ms\r\n", get_ticks(), end_time_ms - start_time_ms);
+    clear_ticks();
+}
+
+void wheel_motor_and_encoder_test(void)
+{
+    enable_power();
+    start_timer();
+
+    const int32_t ENCODER_TARGET = 100;
+    printf("encoder target for each run: %" PRId32 "\r\n", ENCODER_TARGET);
+
+    set_wheel_motor_1_direction_forward();
+    set_wheel_motor_2_direction_forward();
+    printf("moving motors forward\r\n");
+    for (uint8_t motor_speed = 40u; motor_speed < 255u; motor_speed++) {
+        reset_timer();
+        printf("speed: %" PRIu8 "\r\n", motor_speed);
+
+        printf("m1: ");
+        move_until_encoder_count(ENCODER_TARGET, motor_speed, set_wheel_motor_1_speed,
+                                 get_encoder_1_ticks, clear_1_encoder_ticks);
+
+        printf("m2: ");
+        move_until_encoder_count(ENCODER_TARGET, motor_speed, set_wheel_motor_2_speed,
+                                 get_encoder_2_ticks, clear_2_encoder_ticks);
+    }
+
+    set_wheel_motor_1_direction_backward();
+    set_wheel_motor_2_direction_backward();
+    printf("moving motors backward\r\n");
+    for (uint8_t motor_speed = 40u; motor_speed < 255u; motor_speed++) {
+        reset_timer();
+        printf("speed: %" PRIu8 "\r\n", motor_speed);
+
+        printf("m1: ");
+        move_until_encoder_count(-ENCODER_TARGET, motor_speed, set_wheel_motor_1_speed,
+                                 get_encoder_1_ticks, clear_1_encoder_ticks);
+
+        printf("m2: ");
+        move_until_encoder_count(-ENCODER_TARGET, motor_speed, set_wheel_motor_2_speed,
+                                 get_encoder_2_ticks, clear_2_encoder_ticks);
+    }
+
+    disable_power();
+    delay_ms(10000);
+}
+
 /*----------------------------------------------------------------------------*/
 /*                        Private Function Definitions                        */
 /*----------------------------------------------------------------------------*/
-/* none */
+static int32_t abs(int32_t n)
+{
+    return n < 0 ? -n : n;
+}
+

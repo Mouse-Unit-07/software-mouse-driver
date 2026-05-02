@@ -17,6 +17,7 @@
 #include "pushbutton.h"
 #include "infrared_sensor.h"
 #include "magnetic_encoder.h"
+#include "wheel_motor.h"
 #include "vacuum.h"
 
 /*----------------------------------------------------------------------------*/
@@ -41,12 +42,14 @@ void init_mouse(void)
     init_pushbutton();
     init_infrared_sensors();
     init_magnetic_encoders();
+    init_wheel_motors();
     init_vacuum();
 }
 
 void deinit_mouse(void)
 {
     deinit_vacuum();
+    deinit_wheel_motors();
     deinit_magnetic_encoders();
     deinit_infrared_sensors();
     deinit_pushbutton();

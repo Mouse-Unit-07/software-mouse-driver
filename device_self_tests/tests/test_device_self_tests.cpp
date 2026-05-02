@@ -142,6 +142,30 @@ uint32_t read_ir_4_sensor(void)
     return read_ir_4_sensor_called = true;
 }
 
+/* ---------------------------------------------------------------------------*/
+/* wheel motor fakes */
+int32_t fake_ticks{0};
+
+int32_t fake_get_ticks(void)
+{
+    return fake_ticks++;
+}
+
+int32_t fake_get_ticks_no_movement(void)
+{
+    return 0;
+}
+
+void fake_set_speed(uint8_t speed)
+{
+    /* nothing */
+}
+
+void fake_clear_ticks(void)
+{
+    fake_ticks = 0;
+}
+
 }
 
 /*============================================================================*/
@@ -178,12 +202,13 @@ void restore_stdout(void)
     CHECK(freopen("CON", "w", standard_output) != nullptr);
 }
 
-void reset_all_mock_flags(void)
+void reset_all_mock_variables(void)
 {
     read_ir_1_sensor_called = false;
     read_ir_2_sensor_called = false;
     read_ir_3_sensor_called = false;
     read_ir_4_sensor_called = false;
+    fake_ticks = 0;
 }
 
 /*============================================================================*/
@@ -193,7 +218,7 @@ TEST_GROUP(DeviceSelfTestsTests)
 {
     void setup() override
     {
-        reset_all_mock_flags();
+        reset_all_mock_variables();
         mock().clear();
     }
 
@@ -201,7 +226,7 @@ TEST_GROUP(DeviceSelfTestsTests)
     {
         mock().checkExpectations();
         mock().clear();
-        reset_all_mock_flags();
+        reset_all_mock_variables();
     }
 };
 
@@ -441,4 +466,28 @@ TEST(DeviceSelfTestsTests, IrSensorsReadSpeedTestCallsFunctions)
     CHECK(read_ir_2_sensor_called);
     CHECK(read_ir_3_sensor_called);
     CHECK(read_ir_4_sensor_called);
+}
+
+TEST(DeviceSelfTestsTests, MoveUntilEncoderCountReachesTarget)
+{
+    constexpr int32_t ENCODER_COUNT{50};
+
+    mock().expectNCalls((ENCODER_COUNT / 2) + 2, "get_current_time_ms")
+        .andReturnValue(0);
+    mock().expectNCalls(1, "delay_ms");
+
+    move_until_encoder_count(ENCODER_COUNT, 100, fake_set_speed, fake_get_ticks, fake_clear_ticks);
+}
+
+TEST(DeviceSelfTestsTests, MoveUntilEncoderCountBreaksOnTimeout)
+{
+    constexpr int32_t ENCODER_COUNT{50};
+
+    mock().expectOneCall("get_current_time_ms")
+        .andReturnValue(0);
+    mock().expectNCalls(2, "get_current_time_ms")
+        .andReturnValue(3000);
+    mock().expectNCalls(1, "delay_ms");
+
+    move_until_encoder_count(ENCODER_COUNT, 100, fake_set_speed, fake_get_ticks_no_movement, fake_clear_ticks);
 }
