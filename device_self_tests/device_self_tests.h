@@ -31,5 +31,6 @@ void move_until_encoder_count(int32_t encoder_count, uint8_t speed, void (*set_s
                               int32_t (*get_ticks)(void), void (*clear_ticks)(void));
 
 void wheel_motor_and_encoder_test(void);
+void vacuum_test(void);
 
 #endif /* DEVICE_SELF_TESTS_H_ */

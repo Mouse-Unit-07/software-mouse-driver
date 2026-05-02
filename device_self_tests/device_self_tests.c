@@ -20,6 +20,7 @@
 #include "infrared_sensor.h"
 #include "wheel_motor.h"
 #include "magnetic_encoder.h"
+#include "vacuum.h"
 
 /*----------------------------------------------------------------------------*/
 /*                         Private Function Prototypes                        */
@@ -270,6 +271,19 @@ void wheel_motor_and_encoder_test(void)
 
     disable_power();
     delay_ms(10000);
+}
+
+void vacuum_test(void)
+{
+    enable_power();
+
+    for (uint8_t motor_speed = 0u; motor_speed < 255; motor_speed++) {
+        set_vacuum_speed(motor_speed);
+        printf("speed: %" PRIu8 "\r\n", motor_speed);
+        delay_ms(2000);
+    }
+
+    disable_power();
 }
 
 /*----------------------------------------------------------------------------*/
