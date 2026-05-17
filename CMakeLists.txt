@@ -22,3 +22,25 @@ add_subdirectory(initialization)
 add_subdirectory(navigation)
 add_subdirectory(global_time)
 add_subdirectory(user_request)
+
+if(TARGET_WINDOWS)
+    if(SUPPORTS_WINDOWS)
+        add_subdirectory(device_self_tests/tests)
+        add_subdirectory(fault_detector/tests)
+        add_subdirectory(initialization/tests)
+        add_subdirectory(navigation/tests)
+        add_subdirectory(global_time/tests)
+        add_subdirectory(user_request/tests)
+    endif()
+endif()
+
+add_library(mouse_driver_lib INTERFACE)
+
+target_link_libraries(mouse_driver_lib INTERFACE
+    device_self_tests_lib
+    fault_detector_lib
+    initialization_lib
+    navigation_lib
+    global_time_lib
+    user_request_lib
+)
