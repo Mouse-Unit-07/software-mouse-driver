@@ -1,25 +1,25 @@
 #--------------------------------- FILE INFO ----------------------------------#
 # Filename           : CMakeLists.txt                                          #
 #                                                                              #
-# CMakeLists.txt file for user_request test files                              #
+# CMakeLists.txt file for user_interface test files                            #
 #                                                                              #
 #------------------------------------------------------------------------------#
 set_property(GLOBAL APPEND PROPERTY
     ALL_TEST_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_user_request.cpp
-    ${CMAKE_SOURCE_DIR}/src/user_request/user_request.c
-    ${CMAKE_SOURCE_DIR}/src/user_request/user_request.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_user_interface.cpp
+    ${CMAKE_SOURCE_DIR}/src/user_interface/user_interface.c
+    ${CMAKE_SOURCE_DIR}/src/user_interface/user_interface.h
 )
 
-add_executable(test_user_request
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_user_request.cpp
+add_executable(test_user_interface
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_user_interface.cpp
     ${CMAKE_SOURCE_DIR}/platforms/windows/test_main.cpp
 )
 
-target_link_libraries(test_user_request PRIVATE
-    user_request_lib
+target_link_libraries(test_user_interface PRIVATE
+    user_interface_lib
     CppUTest::CppUTest
     CppUTestExt
 )
 
-add_test(NAME test_user_request COMMAND test_user_request)
+add_test(NAME test_user_interface COMMAND test_user_interface)

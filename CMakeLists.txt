@@ -21,7 +21,7 @@ add_subdirectory(fault_detector)
 add_subdirectory(initialization)
 add_subdirectory(navigation)
 add_subdirectory(global_time)
-add_subdirectory(user_request)
+add_subdirectory(user_interface)
 
 if(TARGET_WINDOWS AND SUPPORTS_WINDOWS)
     if(ENABLE_MOUSE_DRIVER_TESTS)
@@ -30,7 +30,7 @@ if(TARGET_WINDOWS AND SUPPORTS_WINDOWS)
         add_subdirectory(initialization/tests)
         add_subdirectory(navigation/tests)
         add_subdirectory(global_time/tests)
-        add_subdirectory(user_request/tests)
+        add_subdirectory(user_interface/tests)
     endif()
 endif()
 
@@ -42,5 +42,5 @@ target_link_libraries(mouse_driver_lib INTERFACE
     initialization_lib
     navigation_lib
     global_time_lib
-    user_request_lib
+    user_interface_lib
 )

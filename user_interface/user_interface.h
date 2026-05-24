@@ -1,7 +1,7 @@
 /*-------------------------------- FILE INFO ---------------------------------*/
-/* Filename           : user_request.h                                        */
+/* Filename           : user_interface.h                                      */
 /*                                                                            */
-/* Interface for user_request library                                         */
+/* Interface for user_interface library                                       */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 #ifndef USER_REQUEST_H_
@@ -15,9 +15,13 @@
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
-void init_user_request(void);
-void deinit_user_request(void);
-uint32_t get_user_request(void);
-void clear_user_request(void);
+void init_user_interface(void);
+void deinit_user_interface(void);
+uint32_t get_button_press_count(void);
+void clear_button_press_count(void);
+bool is_cli_buffer_empty(void);
+bool is_cli_buffer_full(void);
+char pop_cli_buffer(void);
+void clear_cli_buffer(void);
 
 #endif /* USER_REQUEST_H_ */
