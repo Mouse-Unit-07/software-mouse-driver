@@ -19,5 +19,9 @@ void init_user_interface(void);
 void deinit_user_interface(void);
 uint32_t get_button_press_count(void);
 void clear_button_press_count(void);
+bool is_cli_buffer_empty(void);
+bool is_cli_buffer_full(void);
+char pop_cli_buffer(void);
+void clear_cli_buffer(void);
 
 #endif /* USER_REQUEST_H_ */

@@ -36,6 +36,30 @@ void clear_pushbutton_count(void)
     mock().actualCall("clear_pushbutton_count");
 }
 
+bool is_usart_rx_buffer_empty(void)
+{
+    return mock().actualCall("is_usart_rx_buffer_empty")
+        .returnBoolValue();
+}
+
+bool is_usart_rx_buffer_full(void)
+{
+    return mock().actualCall("is_usart_rx_buffer_full")
+        .returnBoolValue();
+}
+
+char pop_usart_rx_buffer(void)
+{
+    return (char) (mock().actualCall("pop_usart_rx_buffer")
+        .returnIntValue());
+
+}
+
+void clear_usart_rx_buffer(void)
+{
+    mock().actualCall("clear_usart_rx_buffer");
+}
+
 }
 
 /*============================================================================*/
@@ -73,15 +97,42 @@ TEST(UserRequestTests, DeinitUserRequest)
     deinit_user_interface();
 }
 
-TEST(UserRequestTests, GetUserRequestCallsGetPushbuttonCount)
+TEST(UserRequestTests, GetUserRequestCallsFunctions)
 {
     mock().expectOneCall("get_pushbutton_count")
         .andReturnValue(4);
     CHECK(get_button_press_count() == 4);
 }
 
-TEST(UserRequestTests, ClearUserRequestCallsClearPushbuttonCount)
+TEST(UserRequestTests, ClearUserRequestCallsFunctions)
 {
     mock().expectOneCall("clear_pushbutton_count");
     clear_button_press_count();
+}
+
+TEST(UserRequestTests, IsCliBufferEmptyCallsFunctions)
+{
+    mock().expectOneCall("is_usart_rx_buffer_empty")
+        .andReturnValue(false);
+    is_cli_buffer_empty();
+}
+
+TEST(UserRequestTests, IsCliBufferFullCallsFunctions)
+{
+    mock().expectOneCall("is_usart_rx_buffer_full")
+        .andReturnValue(false);
+    is_cli_buffer_full();
+}
+
+TEST(UserRequestTests, PopCliBufferCallsFunctions)
+{
+    mock().expectOneCall("pop_usart_rx_buffer")
+        .andReturnValue('\0');
+    pop_cli_buffer();
+}
+
+TEST(UserRequestTests, ClearCliBufferCallsFunctions)
+{
+    mock().expectOneCall("clear_usart_rx_buffer");
+    clear_cli_buffer();
 }
