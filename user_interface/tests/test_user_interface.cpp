@@ -1,7 +1,7 @@
 /*================================ FILE INFO =================================*/
-/* Filename           : test_user_request.cpp                                 */
+/* Filename           : test_user_interface.cpp                               */
 /*                                                                            */
-/* Test implementation for user_request.c                                     */
+/* Test implementation for user_interface.c                                   */
 /*                                                                            */
 /*============================================================================*/
 
@@ -12,7 +12,7 @@ extern "C"
 {
 
 #include <stdint.h>
-#include "user_request.h"
+#include "user_interface.h"
 
 }
 
@@ -65,23 +65,23 @@ TEST_GROUP(UserRequestTests)
 /*============================================================================*/
 TEST(UserRequestTests, InitUserRequest)
 {
-    init_user_request();
+    init_user_interface();
 }
 
 TEST(UserRequestTests, DeinitUserRequest)
 {
-    deinit_user_request();
+    deinit_user_interface();
 }
 
 TEST(UserRequestTests, GetUserRequestCallsGetPushbuttonCount)
 {
     mock().expectOneCall("get_pushbutton_count")
         .andReturnValue(4);
-    CHECK(get_user_request() == 4);
+    CHECK(get_button_press_count() == 4);
 }
 
 TEST(UserRequestTests, ClearUserRequestCallsClearPushbuttonCount)
 {
     mock().expectOneCall("clear_pushbutton_count");
-    clear_user_request();
+    clear_button_press_count();
 }

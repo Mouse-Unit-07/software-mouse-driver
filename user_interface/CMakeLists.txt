@@ -1,18 +1,18 @@
 #--------------------------------- FILE INFO ----------------------------------#
 # Filename           : CMakeLists.txt                                          #
 #                                                                              #
-# CMakeLists.txt file for user_request library source files                    #
+# CMakeLists.txt file for user_interface library source files                  #
 #                                                                              #
 #------------------------------------------------------------------------------#
-add_library(user_request_lib STATIC
-    ${CMAKE_CURRENT_LIST_DIR}/user_request.c
+add_library(user_interface_lib STATIC
+    ${CMAKE_CURRENT_LIST_DIR}/user_interface.c
 )
 
-target_include_directories(user_request_lib PUBLIC
+target_include_directories(user_interface_lib PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
-target_link_libraries(user_request_lib PUBLIC
+target_link_libraries(user_interface_lib PUBLIC
     battery_comparator_lib
     infrared_sensor_lib
     led_lib

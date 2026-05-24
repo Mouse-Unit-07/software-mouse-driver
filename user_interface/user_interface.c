@@ -1,7 +1,7 @@
 /*-------------------------------- FILE INFO ---------------------------------*/
-/* Filename           : user_request.c                                        */
+/* Filename           : user_interface.c                                      */
 /*                                                                            */
-/* Implementation for user_request library                                    */
+/* Implementation for user_interface library                                  */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
@@ -24,22 +24,22 @@
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
 /*----------------------------------------------------------------------------*/
-void init_user_request(void)
+void init_user_interface(void)
 {
     /* nothing to init */
 }
 
-void deinit_user_request(void)
+void deinit_user_interface(void)
 {
     /* nothing to clear/reset */
 }
 
-uint32_t get_user_request(void)
+uint32_t get_button_press_count(void)
 {
     return get_pushbutton_count();
 }
 
-void clear_user_request(void)
+void clear_button_press_count(void)
 {
     clear_pushbutton_count();
 }
