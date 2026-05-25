@@ -12,7 +12,7 @@ target_include_directories(device_self_tests_lib PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
-target_link_libraries(device_self_tests_lib PUBLIC
+target_link_libraries(device_self_tests_lib PRIVATE
     battery_comparator_lib
     infrared_sensor_lib
     led_lib

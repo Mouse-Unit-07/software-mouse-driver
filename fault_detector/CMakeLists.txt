@@ -12,7 +12,7 @@ target_include_directories(fault_detector_lib PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
-target_link_libraries(fault_detector_lib PUBLIC
+target_link_libraries(fault_detector_lib PRIVATE
     battery_comparator_lib
     infrared_sensor_lib
     led_lib
