@@ -12,7 +12,6 @@ extern "C"
 {
 
 #include <stdint.h>
-#include "processor.h"
 #include "initialization.h"
 
 }

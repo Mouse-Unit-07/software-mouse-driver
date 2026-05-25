@@ -11,6 +11,7 @@
 extern "C"
 {
 
+#include <stdint.h>
 #include "fault_detector.h"
 
 }
@@ -28,6 +29,18 @@ bool is_battery_low(void)
 {
     return mock().actualCall("is_battery_low")
         .returnBoolValue();
+}
+
+bool is_current_limit_detection_asserted(void)
+{
+    return mock().actualCall("is_current_limit_detection_asserted")
+        .returnBoolValue();
+}
+
+uint32_t get_error_log_current_size(void)
+{
+    return mock().actualCall("get_error_log_current_size")
+        .returnUnsignedIntValue();
 }
 
 void set_error_handler(void (*handler)(void))
@@ -74,9 +87,28 @@ void printf_telemetry_log(void)
 /*============================================================================*/
 void init_fault_detector_without_cpputest_checks(void)
 {
-    mock().ignoreOtherCalls();
+    mock().disable();
     init_fault_detector();
-    mock().clear();
+    mock().enable();
+}
+
+void set_device_mock_expectations(bool battery_fault, bool cld_fault, uint32_t runtime_fault)
+{
+    mock().expectOneCall("is_battery_low")
+        .andReturnValue(battery_fault);
+    mock().expectOneCall("is_current_limit_detection_asserted")
+        .andReturnValue(cld_fault);
+    mock().expectOneCall("get_error_log_current_size")
+        .andReturnValue(runtime_fault);
+}
+
+bool is_there_hardware_fault_without_cpputest_checks(void)
+{
+    mock().disable();
+    bool result = is_there_hardware_fault();
+    mock().enable();
+
+    return result;
 }
 
 /*============================================================================*/
@@ -107,43 +139,53 @@ TEST(FaultDetectorTests, InitCallsFunctions)
     init_fault_detector();
 }
 
-TEST(FaultDetectorTests, IsThereHardwareFaultChecksDevices)
+TEST(FaultDetectorTests, IsThereHardwareFaultReturnsTrueWhenBatteryLow)
 {
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
+    set_device_mock_expectations(true, false, 0);
+    CHECK(is_there_hardware_fault());
+}
+
+TEST(FaultDetectorTests, IsThereHardwareFaultReturnsTrueWhenCldAsserted)
+{
+    set_device_mock_expectations(false, true, 0);
+    CHECK(is_there_hardware_fault());
+}
+
+TEST(FaultDetectorTests, IsThereHardwareFaultReturnsTrueWhenRuntimeErrorFound)
+{
+    set_device_mock_expectations(false, false, 1);
+    CHECK(is_there_hardware_fault());
+}
+
+TEST(FaultDetectorTests, IsThereHardwareFaultReturnsFalseWhenAllClear)
+{
+    set_device_mock_expectations(false, false, 0);
     CHECK_FALSE(is_there_hardware_fault());
 }
 
 TEST(FaultDetectorTests, InitResetsFault)
 {
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(true);
+    set_device_mock_expectations(true, true, 1);
     CHECK(is_there_hardware_fault());
 
     init_fault_detector_without_cpputest_checks();
 
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
-    CHECK_FALSE(is_there_hardware_fault());
+    CHECK_FALSE(is_there_hardware_fault_without_cpputest_checks());
 }
 
 TEST(FaultDetectorTests, DeinitResetsFault)
 {
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(true);
+    set_device_mock_expectations(true, true, 1);
     CHECK(is_there_hardware_fault());
 
     deinit_fault_detector();
 
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
-    CHECK_FALSE(is_there_hardware_fault());
+    CHECK_FALSE(is_there_hardware_fault_without_cpputest_checks());
 }
 
 TEST(FaultDetectorTests, PrintHardwareStateCallsFunctions)
 {
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
+    set_device_mock_expectations(true, true, 1);
     mock().expectOneCall("printf_call_counts");
     mock().expectOneCall("printf_error_log");
     mock().expectOneCall("printf_first_runtime_error_entry");

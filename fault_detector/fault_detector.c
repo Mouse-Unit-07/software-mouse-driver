@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "battery_comparator.h"
+#include "wheel_motor.h"
 #include "runtime_diagnostics.h"
 
 /*----------------------------------------------------------------------------*/
@@ -26,6 +27,7 @@ static void runtime_error_handler(void);
 /*----------------------------------------------------------------------------*/
 static bool hardware_fault_found = false;
 static bool low_battery = false;
+static bool wheel_motor_driver_cld = false;
 
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
@@ -34,6 +36,7 @@ void init_fault_detector(void)
 {
     hardware_fault_found = false;
     low_battery = false;
+    wheel_motor_driver_cld = false;
 
     set_error_handler(runtime_error_handler);
     set_warning_handler(runtime_warning_handler);
@@ -43,6 +46,7 @@ void deinit_fault_detector(void)
 {
     hardware_fault_found = false;
     low_battery = false;
+    wheel_motor_driver_cld = false;
 }
 
 bool is_there_hardware_fault(void)
@@ -60,6 +64,11 @@ void print_hardware_state(void)
         printf("battery is low\r\n");
     } else {
         printf("battery is stable\r\n");
+    }
+    if (wheel_motor_driver_cld) {
+        printf("wheel motor driver current limit detection asserted\r\n");
+    } else {
+        printf("wheel motor driver is stable\r\n");
     }
     printf("\r\n");
 
@@ -83,6 +92,15 @@ static void check_hardware_state(void)
 {
     if (is_battery_low()) {
         low_battery = true;
+        hardware_fault_found = true;
+    }
+
+    if (is_current_limit_detection_asserted()) {
+        wheel_motor_driver_cld = true;
+        hardware_fault_found = true;
+    }
+
+    if (get_error_log_current_size() > 0) {
         hardware_fault_found = true;
     }
 }

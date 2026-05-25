@@ -12,7 +12,7 @@ target_include_directories(global_time_lib PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
-target_link_libraries(global_time_lib PUBLIC
+target_link_libraries(global_time_lib PRIVATE
     battery_comparator_lib
     infrared_sensor_lib
     led_lib
