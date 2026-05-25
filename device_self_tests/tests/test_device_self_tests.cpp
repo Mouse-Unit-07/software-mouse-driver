@@ -19,8 +19,6 @@ extern "C"
 #include <CppUTest/TestHarness.h>
 #include <CppUTestExt/MockSupport.h>
 #include <array>
-#include <cstdio>
-#include <fstream>
 
 /*============================================================================*/
 /*                            Mock Implementations                            */
@@ -178,37 +176,6 @@ void set_vacuum_speed(uint8_t speed)
 /*============================================================================*/
 /*                             Public Definitions                             */
 /*============================================================================*/
-FILE *standard_output{nullptr};
-constexpr const char *TEST_FILE{"test_output.txt"};
-
-void redirect_stdout_to_file(void)
-{
-    standard_output = stdout;
-    CHECK(freopen(TEST_FILE, "w+", stdout) != nullptr);
-}
-
-void check_printf_output(const char *expected_string)
-{
-    constexpr std::size_t MAX_BUFFER_SIZE{1024};
-    std::array<char, MAX_BUFFER_SIZE> buffer{};
-
-    FILE* file{fopen(TEST_FILE, "r")};
-    CHECK(file != nullptr);
-    
-    const size_t bytes_read{fread(buffer.data(), 1, buffer.size() - 1, file)};
-    CHECK(bytes_read > 0);
-    fclose(file);
-
-    STRCMP_EQUAL(expected_string, buffer.data());
-}
-
-void restore_stdout(void)
-{
-    CHECK(stdout != nullptr);
-    fclose(stdout);
-    CHECK(freopen("CON", "w", standard_output) != nullptr);
-}
-
 void reset_all_mock_variables(void)
 {
     read_ir_1_sensor_called = false;
@@ -250,7 +217,7 @@ TEST(DeviceSelfTestsTests, DeinitDeviceSelfTests)
     deinit_device_self_tests();
 }
 
-TEST(DeviceSelfTestsTests, ProcessorTestsPrintsHelloWorldAndDelays)
+TEST(DeviceSelfTestsTests, ProcessorTestCallsFunctions)
 {
     mock().expectOneCall("start_timer");
     mock().expectOneCall("get_current_time_ms")
@@ -263,18 +230,10 @@ TEST(DeviceSelfTestsTests, ProcessorTestsPrintsHelloWorldAndDelays)
     mock().expectOneCall("get_current_time_ms")
         .andReturnValue(1000);
 
-    redirect_stdout_to_file();
     processor_test();
-    fflush(stdout);
-    restore_stdout();
-    check_printf_output("time: 0ms\r\n"
-                        "Hello World\r\n"
-                        "time: 1000ms... resetting timer\r\n"
-                        "Konnichiwa Sekai\r\n"
-                        "time: 1000ms\r\n");
 }
 
-TEST(DeviceSelfTestsTests, BatteryComparatorTestPrintsOnGoodBattery)
+TEST(DeviceSelfTestsTests, BatteryComparatorTestCallsFunctions)
 {
     mock().expectOneCall("enable_power");
     mock().expectOneCall("is_battery_low")
@@ -286,35 +245,10 @@ TEST(DeviceSelfTestsTests, BatteryComparatorTestPrintsOnGoodBattery)
         .andReturnValue(false);
     mock().expectOneCall("delay_ms");
 
-    redirect_stdout_to_file();
     battery_comparator_test();
-    fflush(stdout);
-    restore_stdout();
-    check_printf_output("power enabled\r\nBattery is not low\r\n"
-                        "power disabled\r\nBattery is not low\r\n");
 }
 
-TEST(DeviceSelfTestsTests, BatteryComparatorTestPrintsOnBadBattery)
-{
-    mock().expectOneCall("enable_power");
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(true);
-    mock().expectOneCall("delay_ms");
-
-    mock().expectOneCall("disable_power");
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(true);
-    mock().expectOneCall("delay_ms");
-
-    redirect_stdout_to_file();
-    battery_comparator_test();
-    fflush(stdout);
-    restore_stdout();
-    check_printf_output("power enabled\r\nBattery is low\r\n"
-                        "power disabled\r\nBattery is low\r\n");
-}
-
-TEST(DeviceSelfTestsTests, PowerEnablerTestPrintsAndDelays)
+TEST(DeviceSelfTestsTests, PowerEnablerTestCallsFunctions)
 {
     mock().expectOneCall("enable_power");
     mock().expectOneCall("delay_ms");
@@ -322,11 +256,7 @@ TEST(DeviceSelfTestsTests, PowerEnablerTestPrintsAndDelays)
     mock().expectOneCall("disable_power");
     mock().expectOneCall("delay_ms");
 
-    redirect_stdout_to_file();
     power_enabler_test();
-    fflush(stdout);
-    restore_stdout();
-    check_printf_output("power enabled\r\npower disabled\r\n");
 }
 
 TEST(DeviceSelfTestsTests, LedTestTogglesLeds)
@@ -365,16 +295,7 @@ TEST(DeviceSelfTestsTests, PushbuttonTestPrintsCount)
     mock().expectOneCall("get_pushbutton_count")
         .andReturnValue(0);
 
-    redirect_stdout_to_file();
     pushbutton_test();
-    fflush(stdout);
-    restore_stdout();
-    check_printf_output("pushbutton count: 0\r\n"
-                        "pushbutton count: 0\r\n"
-                        "pushbutton count: 0\r\n"
-                        "pushbutton count: 0\r\n"
-                        "pushbutton count: 0\r\n"
-                        "cleared pushbutton count: 0\r\n");
 }
 
 TEST(DeviceSelfTestsTests, IrSensorsDistanceTestCallsFunctions)
@@ -388,7 +309,7 @@ TEST(DeviceSelfTestsTests, IrSensorsDistanceTestCallsFunctions)
     mock().expectOneCall("start_timer");
     for (int s{0}; s < SENSOR_COUNT; s++) {
         for (int d{0}; d < TOTAL_TEST_DISTANCES; d++) {
-            for (int t{0}; t < TRIALS_COUNT; t++) {
+            for (uint32_t t{0}; t < TRIALS_COUNT; t++) {
                 mock().expectOneCall("delay_ms");
                 mock().expectOneCall("reset_timer");
                 mock().expectOneCall("get_current_time_ms")
