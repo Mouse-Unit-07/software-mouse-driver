@@ -30,6 +30,12 @@ bool is_battery_low(void)
         .returnBoolValue();
 }
 
+bool is_current_limit_detection_asserted(void)
+{
+    return mock().actualCall("is_current_limit_detection_asserted")
+        .returnBoolValue();
+}
+
 void set_error_handler(void (*handler)(void))
 {
     CHECK(handler != nullptr);
@@ -74,9 +80,18 @@ void printf_telemetry_log(void)
 /*============================================================================*/
 void init_fault_detector_without_cpputest_checks(void)
 {
-    mock().ignoreOtherCalls();
+    mock().disable();
     init_fault_detector();
-    mock().clear();
+    mock().enable();
+}
+
+bool is_there_hardware_fault_without_cpputest_checks(void)
+{
+    mock().disable();
+    bool result = is_there_hardware_fault();
+    mock().enable();
+
+    return result;
 }
 
 /*============================================================================*/
@@ -107,9 +122,29 @@ TEST(FaultDetectorTests, InitCallsFunctions)
     init_fault_detector();
 }
 
-TEST(FaultDetectorTests, IsThereHardwareFaultChecksDevices)
+TEST(FaultDetectorTests, IsThereHardwareFaultReturnsTrueWhenBatteryLow)
 {
     mock().expectOneCall("is_battery_low")
+        .andReturnValue(true);
+    mock().expectOneCall("is_current_limit_detection_asserted")
+        .andReturnValue(false);
+    CHECK(is_there_hardware_fault());
+}
+
+TEST(FaultDetectorTests, IsThereHardwareFaultReturnsTrueWhenCldAsserted)
+{
+    mock().expectOneCall("is_battery_low")
+        .andReturnValue(false);
+    mock().expectOneCall("is_current_limit_detection_asserted")
+        .andReturnValue(true);
+    CHECK(is_there_hardware_fault());
+}
+
+TEST(FaultDetectorTests, IsThereHardwareFaultReturnsFalseWhenAllClear)
+{
+    mock().expectOneCall("is_battery_low")
+        .andReturnValue(false);
+    mock().expectOneCall("is_current_limit_detection_asserted")
         .andReturnValue(false);
     CHECK_FALSE(is_there_hardware_fault());
 }
@@ -118,31 +153,33 @@ TEST(FaultDetectorTests, InitResetsFault)
 {
     mock().expectOneCall("is_battery_low")
         .andReturnValue(true);
+    mock().expectOneCall("is_current_limit_detection_asserted")
+        .andReturnValue(true);
     CHECK(is_there_hardware_fault());
 
     init_fault_detector_without_cpputest_checks();
 
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
-    CHECK_FALSE(is_there_hardware_fault());
+    CHECK_FALSE(is_there_hardware_fault_without_cpputest_checks());
 }
 
 TEST(FaultDetectorTests, DeinitResetsFault)
 {
     mock().expectOneCall("is_battery_low")
         .andReturnValue(true);
+    mock().expectOneCall("is_current_limit_detection_asserted")
+        .andReturnValue(true);
     CHECK(is_there_hardware_fault());
 
     deinit_fault_detector();
 
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
-    CHECK_FALSE(is_there_hardware_fault());
+    CHECK_FALSE(is_there_hardware_fault_without_cpputest_checks());
 }
 
 TEST(FaultDetectorTests, PrintHardwareStateCallsFunctions)
 {
     mock().expectOneCall("is_battery_low")
+        .andReturnValue(false);
+    mock().expectOneCall("is_current_limit_detection_asserted")
         .andReturnValue(false);
     mock().expectOneCall("printf_call_counts");
     mock().expectOneCall("printf_error_log");
