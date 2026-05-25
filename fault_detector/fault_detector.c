@@ -99,6 +99,10 @@ static void check_hardware_state(void)
         wheel_motor_driver_cld = true;
         hardware_fault_found = true;
     }
+
+    if (get_error_log_current_size() > 0) {
+        hardware_fault_found = true;
+    }
 }
 
 static void runtime_warning_handler(void)
