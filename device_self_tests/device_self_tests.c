@@ -21,20 +21,62 @@
 #include "wheel_motor.h"
 #include "magnetic_encoder.h"
 #include "vacuum.h"
+#include "device_self_tests.h"
 
 /*----------------------------------------------------------------------------*/
 /*                         Private Function Prototypes                        */
 /*----------------------------------------------------------------------------*/
 static int32_t abs(int32_t n);
 
+/* exposed for testing */
+uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void));
+void move_until_encoder_count(struct move_until_encoder_count_config cfg);
+
 /*----------------------------------------------------------------------------*/
 /*                               Private Globals                              */
 /*----------------------------------------------------------------------------*/
-static uint32_t (*read_functions[])(void) = {read_ir_1_sensor, 
-                                             read_ir_2_sensor, 
-                                             read_ir_3_sensor, 
-                                             read_ir_4_sensor};
+struct ir_name_and_read_function {
+    const char *name;
+    uint32_t (*read)(void);
+};
+
+const struct ir_name_and_read_function infrared_sensors[] = {{"IR1", read_ir_1_sensor},
+                                                             {"IR2", read_ir_2_sensor},
+                                                             {"IR3", read_ir_3_sensor},
+                                                             {"IR4", read_ir_4_sensor}};
+
 static const uint32_t sensor_count = 4u;
+
+struct wheel_motor_name_and_encoder_functions {
+    const char *name;
+    void (*set_direction_forward)(void);
+    void (*set_direction_backward)(void);
+    void (*set_speed)(uint8_t speed);
+    int32_t (*get_ticks)(void);
+    void (*clear_ticks)(void);
+};
+
+const struct wheel_motor_name_and_encoder_functions wheel_motor_and_encoders[] =
+{
+    {
+        "MOTOR AND ENCODER 1",
+        set_wheel_motor_1_direction_forward,
+        set_wheel_motor_1_direction_backward,
+        set_wheel_motor_1_speed,
+        get_encoder_1_ticks,
+        clear_1_encoder_ticks
+    },
+    {
+        "MOTOR AND ENCODER 2",
+        set_wheel_motor_2_direction_forward,
+        set_wheel_motor_2_direction_backward,
+        set_wheel_motor_2_speed,
+        get_encoder_2_ticks,
+        clear_2_encoder_ticks
+    }
+};
+
+static const uint32_t wheel_motor_and_encoder_count = 2u;
 
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
@@ -117,35 +159,23 @@ void pushbutton_test(void)
     printf("cleared pushbutton count: %" PRIu32 "\r\n", get_pushbutton_count());
 }
 
-void infrared_sensors_distance_test(uint32_t trials_per_distance)
+void infrared_sensors_distance_test(struct ir_distance_test_config cfg)
 {
     enable_power();
     start_timer();
 
-    const uint32_t START_DISTANCE_CM = 2u;
-    const uint32_t END_DISTANCE_CM = 15u;
-    const uint32_t TIME_PER_TRIAL_SEC = 3u;
-    const uint32_t DELAY_TIME_MS = 5000u;
-    printf("reading for %" PRIu32 " seconds per trial\r\n", TIME_PER_TRIAL_SEC);
-    printf("you have %" PRIu32 " seconds to prepare before each sensor trial starts\r\n",
-           DELAY_TIME_MS / 1000);
+    printf("reading for %" PRIu32 " seconds per trial\r\n", cfg.time_per_trial_ms / 1000u);
 
     for (uint32_t s = 0u; s < sensor_count; s++) {
-        printf("=== IR sensor %" PRIu32 "===\r\n", s + 1);
-        for (uint32_t d = START_DISTANCE_CM; d <= END_DISTANCE_CM; d++) {
+        printf("=== %s ===\r\n", infrared_sensors[s].name);
+        for (uint32_t d = cfg.start_distance_cm; d <= cfg.end_distance_cm; d++) {
             printf("place wall %" PRIu32 "cm away from the sensor\r\n", d);
 
-            for (uint32_t t = 0u; t < trials_per_distance; t++) {
-                delay_ms(DELAY_TIME_MS);
-                reset_timer();
-                uint32_t current_time_ms = get_current_time_ms();
-                uint64_t total_reading = 0u;
-                uint32_t reading_count = 0u;
-                while ((get_current_time_ms() - current_time_ms) < (TIME_PER_TRIAL_SEC * 1000)) {
-                    total_reading += read_functions[s]();
-                    reading_count++;
-                }
-                printf("%" PRIu64 "\r\n", total_reading / reading_count);
+            for (uint32_t t = 0u; t < cfg.trials_per_distance; t++) {
+                printf("new trial- you have %" PRIu32 " seconds\r\n", cfg.setup_delay_ms / 1000);
+                delay_ms(cfg.setup_delay_ms);
+                printf("avg: %" PRIu32 "\r\n",
+                       measure_average_reading(cfg.time_per_trial_ms, infrared_sensors[s].read));
             }
         }
         printf("\r\n");
@@ -154,25 +184,22 @@ void infrared_sensors_distance_test(uint32_t trials_per_distance)
     disable_power();
 }
 
-void infrared_sensors_free_reading_test(void)
+void infrared_sensors_free_reading_test(struct ir_free_reading_test_config cfg)
 {
     enable_power();
     start_timer();
 
-    const uint32_t TIME_PER_SENSOR_SEC = 30u;
-    const uint32_t DELAY_TIME_MS = 5000u;
-    printf("reading for %" PRIu32 " seconds per sensor\r\n", TIME_PER_SENSOR_SEC);
-    printf("you have %" PRIu32 " seconds to prepare before each sensor test starts\r\n",
-           DELAY_TIME_MS / 1000);
+    printf("reading for %" PRIu32 " seconds per sensor\r\n", cfg.time_per_sensor_ms / 1000);
 
     for (uint32_t i = 0u; i < sensor_count; i++) {
-        printf("=== IR sensor %" PRIu32 "===\r\n", i + 1);
-        delay_ms(DELAY_TIME_MS);
+        printf("=== %s ===\r\n", infrared_sensors[i].name);
+        printf("you have %" PRIu32 " seconds\r\n", cfg.setup_delay_ms / 1000);
+        delay_ms(cfg.setup_delay_ms);
 
         reset_timer();
         uint32_t current_time_ms = get_current_time_ms();
-        while ((get_current_time_ms() - current_time_ms) < (TIME_PER_SENSOR_SEC * 1000)) {
-            printf("reading: %" PRIu32 "\r\n", read_functions[i]());
+        while ((get_current_time_ms() - current_time_ms) < (cfg.time_per_sensor_ms)) {
+            printf("reading: %" PRIu32 "\r\n", infrared_sensors[i].read());
         }
         printf("\r\n");
     }
@@ -180,22 +207,21 @@ void infrared_sensors_free_reading_test(void)
     disable_power();
 }
 
-void infrared_sensors_read_speed_test(void)
+void infrared_sensors_read_speed_test(uint32_t time_per_sensor_ms)
 {
     enable_power();
     start_timer();
 
-    const uint32_t TIME_PER_SENSOR_SEC = 5u;
-    printf("reading for %" PRIu32 " seconds per sensor\r\n", TIME_PER_SENSOR_SEC);
+    printf("reading for %" PRIu32 " seconds per sensor\r\n", time_per_sensor_ms / 1000);
 
     for (uint32_t i = 0u; i < sensor_count; i++) {
-        printf("=== IR sensor %" PRIu32 "===\r\n", i + 1);
+        printf("=== %s ===\r\n", infrared_sensors[i].name);
 
         uint32_t read_count = 0u;
         reset_timer();
         uint32_t current_time_ms = get_current_time_ms();
-        while ((get_current_time_ms() - current_time_ms) < (TIME_PER_SENSOR_SEC * 1000)) {
-            read_functions[i]();
+        while ((get_current_time_ms() - current_time_ms) < (time_per_sensor_ms)) {
+            infrared_sensors[i].read();
             read_count++;
         }
         printf("total read: %" PRIu32 "\r\n", read_count);
@@ -204,73 +230,56 @@ void infrared_sensors_read_speed_test(void)
     disable_power();
 }
 
-void move_until_encoder_count(int32_t encoder_count, uint8_t speed, void (*set_speed)(uint8_t),
-                              int32_t (*get_ticks)(void), void (*clear_ticks)(void))
-{
-    const uint32_t TIME_LIMIT_MS = 2000u;
-    const uint32_t DRIFT_TIME_MS = 500u;
-
-    uint32_t start_time_ms = get_current_time_ms();;
-    clear_ticks();
-    uint32_t prev_ticks = get_ticks();
-    while (abs(get_ticks()) < abs(encoder_count)) {
-        set_speed(speed);
-        uint32_t current_ticks = get_ticks();
-        if (((get_current_time_ms() - start_time_ms) > TIME_LIMIT_MS)
-            && (current_ticks == prev_ticks)) {
-            break;
-        }
-        prev_ticks = current_ticks;
-    }
-    set_speed(0u);
-    uint32_t end_time_ms = get_current_time_ms();
-    delay_ms(DRIFT_TIME_MS);
-    printf("%" PRId32 ", %" PRIu32 "ms\r\n", get_ticks(), end_time_ms - start_time_ms);
-    clear_ticks();
-}
-
-void wheel_motor_and_encoder_test(void)
+void wheel_motor_and_encoder_test(struct wheel_motor_and_encoder_test_config cfg)
 {
     enable_power();
     start_timer();
 
-    const int32_t ENCODER_TARGET = 100;
-    printf("encoder target for each run: %" PRId32 "\r\n", ENCODER_TARGET);
+    printf("encoder target for each run: %" PRId32 "\r\n", cfg.encoder_target);
 
-    set_wheel_motor_1_direction_forward();
-    set_wheel_motor_2_direction_forward();
+    /*-----------------------------------------------------------------------*/
+    /* forward */
     printf("moving motors forward\r\n");
-    for (uint8_t motor_speed = 40u; motor_speed < 255u; motor_speed++) {
+
+    for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
+        wheel_motor_and_encoders[i].set_direction_forward();
+        printf("%s\r\n", wheel_motor_and_encoders[i].name);
         reset_timer();
-        printf("speed: %" PRIu8 "\r\n", motor_speed);
 
-        printf("m1: ");
-        move_until_encoder_count(ENCODER_TARGET, motor_speed, set_wheel_motor_1_speed,
-                                 get_encoder_1_ticks, clear_1_encoder_ticks);
+        struct move_until_encoder_count_config move_fwd_cfg = {0};
+        move_fwd_cfg.encoder_target = cfg.encoder_target;
+        move_fwd_cfg.speed = cfg.speed;
+        move_fwd_cfg.timeout_ms = cfg.timeout_ms;
+        move_fwd_cfg.drift_delay_ms = cfg.drift_delay_ms;
+        move_fwd_cfg.set_speed = wheel_motor_and_encoders[i].set_speed;
+        move_fwd_cfg.get_ticks = wheel_motor_and_encoders[i].get_ticks;
+        move_fwd_cfg.clear_ticks = wheel_motor_and_encoders[i].clear_ticks;
 
-        printf("m2: ");
-        move_until_encoder_count(ENCODER_TARGET, motor_speed, set_wheel_motor_2_speed,
-                                 get_encoder_2_ticks, clear_2_encoder_ticks);
+        move_until_encoder_count(move_fwd_cfg);
     }
 
-    set_wheel_motor_1_direction_backward();
-    set_wheel_motor_2_direction_backward();
+    /*-----------------------------------------------------------------------*/
+    /* backward */
     printf("moving motors backward\r\n");
-    for (uint8_t motor_speed = 40u; motor_speed < 255u; motor_speed++) {
+
+    for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
+        wheel_motor_and_encoders[i].set_direction_backward();
+        printf("%s\r\n", wheel_motor_and_encoders[i].name);
         reset_timer();
-        printf("speed: %" PRIu8 "\r\n", motor_speed);
 
-        printf("m1: ");
-        move_until_encoder_count(-ENCODER_TARGET, motor_speed, set_wheel_motor_1_speed,
-                                 get_encoder_1_ticks, clear_1_encoder_ticks);
+        struct move_until_encoder_count_config move_bwd_cfg = {0};
+        move_bwd_cfg.encoder_target = -cfg.encoder_target;
+        move_bwd_cfg.speed = cfg.speed;
+        move_bwd_cfg.timeout_ms = cfg.timeout_ms;
+        move_bwd_cfg.drift_delay_ms = cfg.drift_delay_ms;
+        move_bwd_cfg.set_speed = wheel_motor_and_encoders[i].set_speed;
+        move_bwd_cfg.get_ticks = wheel_motor_and_encoders[i].get_ticks;
+        move_bwd_cfg.clear_ticks = wheel_motor_and_encoders[i].clear_ticks;
 
-        printf("m2: ");
-        move_until_encoder_count(-ENCODER_TARGET, motor_speed, set_wheel_motor_2_speed,
-                                 get_encoder_2_ticks, clear_2_encoder_ticks);
+        move_until_encoder_count(move_bwd_cfg);
     }
 
     disable_power();
-    delay_ms(10000);
 }
 
 void vacuum_test(void)
@@ -294,3 +303,47 @@ static int32_t abs(int32_t n)
     return n < 0 ? -n : n;
 }
 
+/* exposed for testing */
+uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void))
+{
+    reset_timer();
+
+    uint32_t start_time_ms = get_current_time_ms();
+
+    uint64_t total_reading = 0u;
+    uint32_t reading_count = 0u;
+
+    while ((get_current_time_ms() - start_time_ms) < measurement_time_ms) {
+        total_reading += read_sensor();
+        reading_count++;
+    }
+
+    return total_reading / reading_count;
+}
+
+/* exposed for testing */
+void move_until_encoder_count(struct move_until_encoder_count_config cfg)
+{
+    uint32_t start_time_ms = get_current_time_ms();
+    cfg.clear_ticks();
+    int32_t prev_ticks = cfg.get_ticks();
+
+    while (abs(cfg.get_ticks()) < abs(cfg.encoder_target)) {
+        cfg.set_speed(cfg.speed);
+        int32_t current_ticks = cfg.get_ticks();
+
+        if (((get_current_time_ms() - start_time_ms) > cfg.timeout_ms)
+            && (current_ticks == prev_ticks)) {
+            break;
+        }
+        prev_ticks = current_ticks;
+    }
+
+    cfg.set_speed(0u);
+    uint32_t end_time_ms = get_current_time_ms();
+    delay_ms(cfg.drift_delay_ms);
+
+    printf("%" PRId32 ", %" PRIu32 "ms\r\n", cfg.get_ticks(), end_time_ms - start_time_ms);
+
+    cfg.clear_ticks();
+}
