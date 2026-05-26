@@ -35,7 +35,6 @@ struct move_until_encoder_count_config {
 };
 
 struct wheel_motor_and_encoder_test_config {
-    const char *name;
     uint32_t timeout_ms;
     uint32_t drift_delay_ms;
     int32_t encoder_target;

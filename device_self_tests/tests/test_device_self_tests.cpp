@@ -555,7 +555,6 @@ TEST(DeviceSelfTestsTests, WheelMotorAndEncoderTestCallsFunctions)
 {
     wheel_motor_and_encoder_test_config cfg = {0};
 
-    cfg.name = "motor test";
     cfg.timeout_ms = 2000u;
     cfg.drift_delay_ms = 500u;
     cfg.encoder_target = 50;
