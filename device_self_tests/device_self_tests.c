@@ -24,15 +24,6 @@
 #include "device_self_tests.h"
 
 /*----------------------------------------------------------------------------*/
-/*                         Private Function Prototypes                        */
-/*----------------------------------------------------------------------------*/
-static int32_t abs(int32_t n);
-
-/* exposed for testing */
-uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void));
-void move_until_encoder_count(struct move_until_encoder_count_config cfg);
-
-/*----------------------------------------------------------------------------*/
 /*                               Private Globals                              */
 /*----------------------------------------------------------------------------*/
 struct ir_name_and_read_function {
@@ -77,6 +68,20 @@ const struct wheel_motor_name_and_encoder_functions wheel_motor_and_encoders[] =
 };
 
 static const uint32_t wheel_motor_and_encoder_count = 2u;
+
+/*----------------------------------------------------------------------------*/
+/*                         Private Function Prototypes                        */
+/*----------------------------------------------------------------------------*/
+static int32_t abs(int32_t n);
+
+static void run_motor_test_sweep(
+    const struct wheel_motor_name_and_encoder_functions *motor,
+    struct wheel_motor_and_encoder_test_config cfg,
+    bool is_direction_forward);
+
+/* exposed for testing */
+uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void));
+void move_until_encoder_count(struct move_until_encoder_count_config cfg);
 
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
@@ -237,46 +242,14 @@ void wheel_motor_and_encoder_test(struct wheel_motor_and_encoder_test_config cfg
 
     printf("encoder target for each run: %" PRId32 "\r\n", cfg.encoder_target);
 
-    /*-----------------------------------------------------------------------*/
-    /* forward */
     printf("moving motors forward\r\n");
-
     for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
-        wheel_motor_and_encoders[i].set_direction_forward();
-        printf("%s\r\n", wheel_motor_and_encoders[i].name);
-        reset_timer();
-
-        struct move_until_encoder_count_config move_fwd_cfg = {0};
-        move_fwd_cfg.encoder_target = cfg.encoder_target;
-        move_fwd_cfg.speed = cfg.speed;
-        move_fwd_cfg.timeout_ms = cfg.timeout_ms;
-        move_fwd_cfg.drift_delay_ms = cfg.drift_delay_ms;
-        move_fwd_cfg.set_speed = wheel_motor_and_encoders[i].set_speed;
-        move_fwd_cfg.get_ticks = wheel_motor_and_encoders[i].get_ticks;
-        move_fwd_cfg.clear_ticks = wheel_motor_and_encoders[i].clear_ticks;
-
-        move_until_encoder_count(move_fwd_cfg);
+        run_motor_test_sweep(&wheel_motor_and_encoders[i], cfg, true);
     }
 
-    /*-----------------------------------------------------------------------*/
-    /* backward */
     printf("moving motors backward\r\n");
-
     for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
-        wheel_motor_and_encoders[i].set_direction_backward();
-        printf("%s\r\n", wheel_motor_and_encoders[i].name);
-        reset_timer();
-
-        struct move_until_encoder_count_config move_bwd_cfg = {0};
-        move_bwd_cfg.encoder_target = -cfg.encoder_target;
-        move_bwd_cfg.speed = cfg.speed;
-        move_bwd_cfg.timeout_ms = cfg.timeout_ms;
-        move_bwd_cfg.drift_delay_ms = cfg.drift_delay_ms;
-        move_bwd_cfg.set_speed = wheel_motor_and_encoders[i].set_speed;
-        move_bwd_cfg.get_ticks = wheel_motor_and_encoders[i].get_ticks;
-        move_bwd_cfg.clear_ticks = wheel_motor_and_encoders[i].clear_ticks;
-
-        move_until_encoder_count(move_bwd_cfg);
+        run_motor_test_sweep(&wheel_motor_and_encoders[i], cfg, false);
     }
 
     disable_power();
@@ -301,6 +274,44 @@ void vacuum_test(void)
 static int32_t abs(int32_t n)
 {
     return n < 0 ? -n : n;
+}
+
+static void run_motor_test_sweep(
+    const struct wheel_motor_name_and_encoder_functions *motor,
+    struct wheel_motor_and_encoder_test_config cfg,
+    bool is_direction_forward)
+{
+    if (cfg.speed_step == 0u) {
+        return;
+    }
+
+    if (is_direction_forward) {
+        motor->set_direction_forward();
+    } else {
+        motor->set_direction_backward();
+    }
+
+    printf("%s\r\n", motor->name);
+
+    for (uint32_t speed = cfg.start_speed; speed <= cfg.end_speed; speed += cfg.speed_step) {
+        printf("speed: %" PRIu32 "\r\n", speed);
+        reset_timer();
+
+        struct move_until_encoder_count_config move_cfg = {0};
+        if (is_direction_forward) {
+            move_cfg.encoder_target = cfg.encoder_target;
+        } else {
+            move_cfg.encoder_target = -cfg.encoder_target;
+        }
+        move_cfg.speed = (uint8_t)speed;
+        move_cfg.timeout_ms = cfg.timeout_ms;
+        move_cfg.drift_delay_ms = cfg.drift_delay_ms;
+        move_cfg.set_speed = motor->set_speed;
+        move_cfg.get_ticks = motor->get_ticks;
+        move_cfg.clear_ticks = motor->clear_ticks;
+
+        move_until_encoder_count(move_cfg);
+    }
 }
 
 /* exposed for testing */

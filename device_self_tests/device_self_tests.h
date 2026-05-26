@@ -39,7 +39,10 @@ struct wheel_motor_and_encoder_test_config {
     uint32_t timeout_ms;
     uint32_t drift_delay_ms;
     int32_t encoder_target;
-    uint8_t speed;
+
+    uint8_t start_speed;
+    uint8_t end_speed;
+    uint8_t speed_step;
 };
 
 /*----------------------------------------------------------------------------*/

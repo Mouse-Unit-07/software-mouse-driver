@@ -559,22 +559,24 @@ TEST(DeviceSelfTestsTests, WheelMotorAndEncoderTestCallsFunctions)
     cfg.timeout_ms = 2000u;
     cfg.drift_delay_ms = 500u;
     cfg.encoder_target = 50;
-    cfg.speed = 100u;
+    cfg.start_speed = 100u;
+    cfg.end_speed = 150u;
+    cfg.speed_step = 2u;
 
     mock().expectOneCall("enable_power");
     mock().expectOneCall("start_timer");
 
     mock().expectOneCall("set_wheel_motor_1_direction_forward");
-    mock().expectOneCall("reset_timer");
+    mock().expectNCalls(((cfg.end_speed - cfg.start_speed) / cfg.speed_step) + 1, "reset_timer");
 
     mock().expectOneCall("set_wheel_motor_2_direction_forward");
-    mock().expectOneCall("reset_timer");
+    mock().expectNCalls(((cfg.end_speed - cfg.start_speed) / cfg.speed_step) + 1, "reset_timer");
 
     mock().expectOneCall("set_wheel_motor_1_direction_backward");
-    mock().expectOneCall("reset_timer");
+    mock().expectNCalls(((cfg.end_speed - cfg.start_speed) / cfg.speed_step) + 1, "reset_timer");
 
     mock().expectOneCall("set_wheel_motor_2_direction_backward");
-    mock().expectOneCall("reset_timer");
+    mock().expectNCalls(((cfg.end_speed - cfg.start_speed) / cfg.speed_step) + 1, "reset_timer");
 
     mock().expectOneCall("disable_power");
 
