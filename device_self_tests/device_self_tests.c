@@ -45,14 +45,20 @@ struct wheel_motor_name_and_encoder_functions {
 /*----------------------------------------------------------------------------*/
 static int32_t abs(int32_t n);
 
-static void run_motor_test_sweep(
+static void run_motor_test_sweep(const struct wheel_motor_name_and_encoder_functions *motor,
+                                 struct wheel_motor_and_encoder_test_config cfg,
+                                 bool is_direction_forward);
+
+static void run_motor_deceleration_test_sweep(
     const struct wheel_motor_name_and_encoder_functions *motor,
-    struct wheel_motor_and_encoder_test_config cfg,
+    struct wheel_motor_deceleration_test_config cfg,
     bool is_direction_forward);
 
-/* exposed for testing */
+/* helpers exposed for testing */
 uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void));
 void move_until_encoder_count(struct move_until_encoder_count_config cfg);
+void move_with_accel_decel_profile(struct move_until_encoder_count_config cfg, uint8_t start_speed,
+                                   uint8_t top_speed, uint32_t accel_decel_percent);
 
 /*----------------------------------------------------------------------------*/
 /*                               Private Globals                              */
@@ -258,6 +264,26 @@ void wheel_motor_and_encoder_test(struct wheel_motor_and_encoder_test_config cfg
     disable_power();
 }
 
+void wheel_motor_deceleration_test(struct wheel_motor_deceleration_test_config cfg)
+{
+    enable_power();
+    start_timer();
+
+    printf("encoder target for each run: %" PRId32 "\r\n", cfg.encoder_target);
+
+    printf("moving motors forward\r\n");
+    for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
+        run_motor_deceleration_test_sweep(&wheel_motor_and_encoders[i], cfg, true);
+    }
+
+    printf("moving motors backward\r\n");
+    for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
+        run_motor_deceleration_test_sweep(&wheel_motor_and_encoders[i], cfg, false);
+    }
+
+    disable_power();
+}
+
 void vacuum_test(void)
 {
     enable_power();
@@ -279,10 +305,9 @@ static int32_t abs(int32_t n)
     return n < 0 ? -n : n;
 }
 
-static void run_motor_test_sweep(
-    const struct wheel_motor_name_and_encoder_functions *motor,
-    struct wheel_motor_and_encoder_test_config cfg,
-    bool is_direction_forward)
+static void run_motor_test_sweep(const struct wheel_motor_name_and_encoder_functions *motor,
+                                 struct wheel_motor_and_encoder_test_config cfg,
+                                 bool is_direction_forward)
 {
     if (cfg.speed_step == 0u) {
         return;
@@ -314,6 +339,46 @@ static void run_motor_test_sweep(
         move_cfg.clear_ticks = motor->clear_ticks;
 
         move_until_encoder_count(move_cfg);
+    }
+}
+
+static void run_motor_deceleration_test_sweep(
+    const struct wheel_motor_name_and_encoder_functions *motor,
+    struct wheel_motor_deceleration_test_config cfg,
+    bool is_direction_forward)
+{
+    if (is_direction_forward) {
+        motor->set_direction_forward();
+    } else {
+        motor->set_direction_backward();
+    }
+
+    printf("%s\r\n", motor->name);
+
+    uint32_t max_percent = cfg.max_accel_decel_percent;
+    if (max_percent > 100u) {
+        max_percent = 100u;
+    }
+
+    for (uint32_t percent = 0u; percent <= max_percent; percent++) {
+        printf("accel/decel ratio: %" PRIu32 "%%\r\n", percent);
+
+        reset_timer();
+
+        struct move_until_encoder_count_config move_cfg = {0};
+
+        move_cfg.timeout_ms = cfg.timeout_ms;
+        move_cfg.drift_delay_ms = cfg.drift_delay_ms;
+        if (is_direction_forward) {
+            move_cfg.encoder_target = cfg.encoder_target;
+        } else {
+            move_cfg.encoder_target = -cfg.encoder_target;
+        }
+        move_cfg.set_speed = motor->set_speed;
+        move_cfg.get_ticks = motor->get_ticks;
+        move_cfg.clear_ticks = motor->clear_ticks;
+
+        move_with_accel_decel_profile(move_cfg, cfg.start_speed, cfg.top_speed, percent);
     }
 }
 
@@ -359,5 +424,49 @@ void move_until_encoder_count(struct move_until_encoder_count_config cfg)
 
     printf("%" PRId32 ", %" PRIu32 "ms\r\n", cfg.get_ticks(), end_time_ms - start_time_ms);
 
+    cfg.clear_ticks();
+}
+
+/* exposed for testing */
+void move_with_accel_decel_profile(struct move_until_encoder_count_config cfg, uint8_t start_speed,
+                                   uint8_t top_speed, uint32_t accel_decel_percent)
+{
+    uint32_t start_time_ms = get_current_time_ms();
+
+    cfg.clear_ticks();
+
+    int32_t prev_ticks = cfg.get_ticks();
+    int32_t abs_target = abs(cfg.encoder_target);
+    uint32_t accel_ticks = (abs_target * accel_decel_percent) / 200u;
+    uint32_t decel_start_ticks = abs_target - accel_ticks;
+
+    while (abs(cfg.get_ticks()) < abs_target) {
+        int32_t current_ticks = abs(cfg.get_ticks());
+        uint8_t speed = top_speed;
+
+        if ((accel_ticks > 0u) && (current_ticks < (int32_t)accel_ticks)) {
+            speed = start_speed + (((top_speed - start_speed) * current_ticks) / accel_ticks);
+        } else if ((accel_ticks > 0u) && (current_ticks >= (int32_t)decel_start_ticks)) {
+            uint32_t decel_progress = current_ticks - decel_start_ticks;
+            speed = top_speed - (((top_speed - start_speed) * decel_progress) / accel_ticks);
+        }
+        cfg.set_speed(speed);
+
+        int32_t latest_ticks = cfg.get_ticks();
+
+        if (((get_current_time_ms() - start_time_ms) > cfg.timeout_ms)
+            && (latest_ticks == prev_ticks)) {
+            break;
+        }
+
+        prev_ticks = latest_ticks;
+    }
+
+    cfg.set_speed(0u);
+
+    uint32_t end_time_ms = get_current_time_ms();
+    delay_ms(cfg.drift_delay_ms);
+
+    printf("%" PRId32 ", %" PRIu32 "ms\r\n", cfg.get_ticks(), end_time_ms - start_time_ms);
     cfg.clear_ticks();
 }
