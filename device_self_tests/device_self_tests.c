@@ -24,19 +24,12 @@
 #include "device_self_tests.h"
 
 /*----------------------------------------------------------------------------*/
-/*                               Private Globals                              */
+/*                           Struct, Enum, Typedefs                           */
 /*----------------------------------------------------------------------------*/
 struct ir_name_and_read_function {
     const char *name;
     uint32_t (*read)(void);
 };
-
-const struct ir_name_and_read_function infrared_sensors[] = {{"IR1", read_ir_1_sensor},
-                                                             {"IR2", read_ir_2_sensor},
-                                                             {"IR3", read_ir_3_sensor},
-                                                             {"IR4", read_ir_4_sensor}};
-
-static const uint32_t sensor_count = 4u;
 
 struct wheel_motor_name_and_encoder_functions {
     const char *name;
@@ -46,6 +39,30 @@ struct wheel_motor_name_and_encoder_functions {
     int32_t (*get_ticks)(void);
     void (*clear_ticks)(void);
 };
+
+/*----------------------------------------------------------------------------*/
+/*                         Private Function Prototypes                        */
+/*----------------------------------------------------------------------------*/
+static int32_t abs(int32_t n);
+
+static void run_motor_test_sweep(
+    const struct wheel_motor_name_and_encoder_functions *motor,
+    struct wheel_motor_and_encoder_test_config cfg,
+    bool is_direction_forward);
+
+/* exposed for testing */
+uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void));
+void move_until_encoder_count(struct move_until_encoder_count_config cfg);
+
+/*----------------------------------------------------------------------------*/
+/*                               Private Globals                              */
+/*----------------------------------------------------------------------------*/
+const struct ir_name_and_read_function infrared_sensors[] = {{"IR1", read_ir_1_sensor},
+                                                             {"IR2", read_ir_2_sensor},
+                                                             {"IR3", read_ir_3_sensor},
+                                                             {"IR4", read_ir_4_sensor}};
+
+static const uint32_t sensor_count = 4u;
 
 const struct wheel_motor_name_and_encoder_functions wheel_motor_and_encoders[] =
 {
@@ -68,20 +85,6 @@ const struct wheel_motor_name_and_encoder_functions wheel_motor_and_encoders[] =
 };
 
 static const uint32_t wheel_motor_and_encoder_count = 2u;
-
-/*----------------------------------------------------------------------------*/
-/*                         Private Function Prototypes                        */
-/*----------------------------------------------------------------------------*/
-static int32_t abs(int32_t n);
-
-static void run_motor_test_sweep(
-    const struct wheel_motor_name_and_encoder_functions *motor,
-    struct wheel_motor_and_encoder_test_config cfg,
-    bool is_direction_forward);
-
-/* exposed for testing */
-uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void));
-void move_until_encoder_count(struct move_until_encoder_count_config cfg);
 
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
