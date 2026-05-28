@@ -126,21 +126,23 @@ struct move_forward_control_config create_default_control_config(void)
     cfg.base_speed = 200u;
     cfg.min_speed = 100u;
     cfg.max_speed = 255u;
-
     cfg.kp_velocity = 1;
     cfg.kd_velocity = 1;
-
     cfg.kp_angle = 1;
     cfg.kd_angle = 1;
-
     cfg.kp_ir = 1;
     cfg.kd_ir = 1;
-
     cfg.pid_scale = 1;
-
     cfg.wall_target = 500u;
 
     return cfg;
+}
+
+void set_move_forward_control_configs(void)
+{
+    set_no_wall_move_forward_control_config(create_default_control_config());
+    set_one_wall_move_forward_control_config(create_default_control_config());
+    set_both_wall_move_forward_control_config(create_default_control_config());
 }
 
 struct rotate_control_config create_default_rotate_control_config(void)
@@ -150,16 +152,18 @@ struct rotate_control_config create_default_rotate_control_config(void)
     cfg.base_speed = 200u;
     cfg.min_speed = 100u;
     cfg.max_speed = 255u;
-
     cfg.kp_velocity = 1;
     cfg.kd_velocity = 1;
-
     cfg.kp_angle = 1;
     cfg.kd_angle = 1;
-
     cfg.pid_scale = 1;
 
     return cfg;
+}
+
+void set_rotation_control_config(void)
+{
+    set_rotate_control_config(create_default_rotate_control_config());
 }
 
 /*============================================================================*/
@@ -172,6 +176,8 @@ TEST_GROUP(NavigationTests)
         mock().clear();
         reset_encoder_mocks();
         reset_ir_mocks();
+        set_move_forward_control_configs();
+        set_rotation_control_config();
     }
 
     void teardown() override
@@ -264,13 +270,12 @@ TEST(NavigationTests, InitMoveForwardStateClearsStateAndInitializesHardware)
 TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityError)
 {
     struct move_forward_state state{0};
-    struct move_forward_config cfg{};
-    cfg.wall_mode = WALL_FEEDBACK_NONE;
 
     fake_encoder_1_ticks = 100;
     fake_encoder_2_ticks = 120;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
 
     CHECK(errors.velocity_error == 20);
 }
@@ -280,12 +285,11 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityDerivative)
     struct move_forward_state state{0};
     state.prev_velocity_error = 10;
 
-    struct move_forward_config cfg{};
-
     fake_encoder_1_ticks = 100;
     fake_encoder_2_ticks = 130;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
 
     CHECK(errors.velocity_error == 30);
     CHECK(errors.velocity_derivative == 20);
@@ -294,12 +298,12 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityDerivative)
 TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleError)
 {
     struct move_forward_state state{0};
-    struct move_forward_config cfg{};
 
     fake_encoder_1_ticks = 50;
     fake_encoder_2_ticks = 80;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
 
     CHECK(errors.angle_error == 30);
 }
@@ -309,12 +313,11 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleDerivative)
     struct move_forward_state state{0};
     state.prev_angle_error = 5;
 
-    struct move_forward_config cfg{};
-
     fake_encoder_1_ticks = 10;
     fake_encoder_2_ticks = 40;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
 
     CHECK(errors.angle_error == 30);
     CHECK(errors.angle_derivative == 25);
@@ -323,12 +326,11 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleDerivative)
 TEST(NavigationTests, CalculateMoveForwardErrorsUpdatesState)
 {
     struct move_forward_state state{0};
-    struct move_forward_config cfg{};
 
     fake_encoder_1_ticks = 70;
     fake_encoder_2_ticks = 90;
 
-    calculate_move_forward_errors(&state, cfg);
+    calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u);
 
     CHECK(state.prev_enc_1_ticks == 70);
     CHECK(state.prev_enc_2_ticks == 90);
@@ -340,13 +342,11 @@ TEST(NavigationTests, CalculateMoveForwardErrorsUpdatesState)
 TEST(NavigationTests, CalculateMoveForwardErrorsLeftWallModeCalculatesIrError)
 {
     struct move_forward_state state{0};
-    struct move_forward_config cfg{};
-    cfg.wall_mode = WALL_FEEDBACK_LEFT;
-    cfg.control.wall_target = 500;
 
     fake_ir_2_reading_value = 450;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u)};
 
     CHECK(errors.ir_error == 50);
 }
@@ -354,13 +354,11 @@ TEST(NavigationTests, CalculateMoveForwardErrorsLeftWallModeCalculatesIrError)
 TEST(NavigationTests, CalculateMoveForwardErrorsRightWallModeCalculatesIrError)
 {
     struct move_forward_state state{0};
-    struct move_forward_config cfg{};
-    cfg.wall_mode = WALL_FEEDBACK_RIGHT;
-    cfg.control.wall_target = 500;
 
     fake_ir_3_reading_value = 450;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_RIGHT, 500u)};
 
     CHECK(errors.ir_error == -50);
 }
@@ -368,13 +366,12 @@ TEST(NavigationTests, CalculateMoveForwardErrorsRightWallModeCalculatesIrError)
 TEST(NavigationTests, CalculateMoveForwardErrorsBothWallModeCalculatesIrError)
 {
     struct move_forward_state state{0};
-    struct move_forward_config cfg{};
-    cfg.wall_mode = WALL_FEEDBACK_BOTH;
 
     fake_ir_2_reading_value = 400;
     fake_ir_3_reading_value = 550;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_BOTH, 0u)};
 
     CHECK(errors.ir_error == 150);
 }
@@ -384,13 +381,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesIrDerivative)
     struct move_forward_state state{0};
     state.prev_ir_error = 10;
 
-    struct move_forward_config cfg{};
-    cfg.wall_mode = WALL_FEEDBACK_LEFT;
-    cfg.control.wall_target = 500;
-
     fake_ir_2_reading_value = 450;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u)};
 
     CHECK(errors.ir_error == 50);
     CHECK(errors.ir_derivative == 40);
@@ -399,13 +393,12 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesIrDerivative)
 TEST(NavigationTests, CalculateMoveForwardErrorsNoWallModeLeavesIrErrorZero)
 {
     struct move_forward_state state{0};
-    struct move_forward_config cfg{};
-    cfg.wall_mode = WALL_FEEDBACK_NONE;
 
     fake_ir_2_reading_value = 1000;
     fake_ir_3_reading_value = 1000;
 
-    struct move_forward_errors errors{calculate_move_forward_errors(&state, cfg)};
+    struct move_forward_errors errors{
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
 
     CHECK(errors.ir_error == 0);
     CHECK(errors.ir_derivative == 0);
@@ -483,9 +476,6 @@ TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
     calculate_maze_params(maze_params);
     calculate_navigation_params();
 
-    struct move_forward_config cfg{};
-    cfg.control = create_default_control_config();
-
     /* encoder ticks never change */
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
@@ -498,7 +488,7 @@ TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
 
     mock().ignoreOtherCalls();
 
-    move_forward(cfg);
+    move_forward();
 }
 
 /*----------------------------------------------------------------------------*/
@@ -623,12 +613,8 @@ TEST(NavigationTests, CalculateRotateErrorsUsesAbsoluteEncoderValues)
 TEST(NavigationTests, CalculateRotateMotorOutputClockwiseZeroErrorUsesBaseSpeed)
 {
     struct rotate_errors errors{0};
-
-    struct rotate_config cfg{};
-    cfg.direction = ROTATE_CLOCKWISE;
-    cfg.control = create_default_rotate_control_config();
-
-    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
 
     CHECK(output.motor_1_speed == 200);
     CHECK(output.motor_2_speed == 200);
@@ -639,11 +625,8 @@ TEST(NavigationTests, CalculateRotateMotorOutputClockwisePositiveControl)
     struct rotate_errors errors{0};
     errors.velocity_error = 10;
 
-    struct rotate_config cfg{};
-    cfg.direction = ROTATE_CLOCKWISE;
-    cfg.control = create_default_rotate_control_config();
-
-    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
 
     CHECK(output.motor_1_speed > output.motor_2_speed);
 }
@@ -653,11 +636,8 @@ TEST(NavigationTests, CalculateRotateMotorOutputClockwiseNegativeControl)
     struct rotate_errors errors{0};
     errors.velocity_error = -10;
 
-    struct rotate_config cfg{};
-    cfg.direction = ROTATE_CLOCKWISE;
-    cfg.control = create_default_rotate_control_config();
-
-    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
 
     CHECK(output.motor_2_speed > output.motor_1_speed);
 }
@@ -667,11 +647,9 @@ TEST(NavigationTests, CalculateRotateMotorOutputCounterClockwisePositiveControl)
     struct rotate_errors errors{0};
     errors.velocity_error = 10;
 
-    struct rotate_config cfg{};
-    cfg.direction = ROTATE_COUNTER_CLOCKWISE;
-    cfg.control = create_default_rotate_control_config();
-
-    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+    struct motor_output output{
+        calculate_rotate_motor_output(errors, ROTATE_COUNTER_CLOCKWISE, cfg)};
 
     CHECK(output.motor_2_speed > output.motor_1_speed);
 }
@@ -681,11 +659,9 @@ TEST(NavigationTests, CalculateRotateMotorOutputCounterClockwiseNegativeControl)
     struct rotate_errors errors{0};
     errors.velocity_error = -10;
 
-    struct rotate_config cfg{};
-    cfg.direction = ROTATE_COUNTER_CLOCKWISE;
-    cfg.control = create_default_rotate_control_config();
-
-    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+    struct motor_output output{
+        calculate_rotate_motor_output(errors, ROTATE_COUNTER_CLOCKWISE, cfg)};
 
     CHECK(output.motor_1_speed > output.motor_2_speed);
 }
@@ -695,11 +671,8 @@ TEST(NavigationTests, CalculateRotateMotorOutputClampsMaximum)
     struct rotate_errors errors{0};
     errors.velocity_error = 100000;
 
-    struct rotate_config cfg{};
-    cfg.direction = ROTATE_CLOCKWISE;
-    cfg.control = create_default_rotate_control_config();
-
-    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
 
     CHECK(output.motor_1_speed == 255);
 }
@@ -709,23 +682,14 @@ TEST(NavigationTests, CalculateRotateMotorOutputClampsMinimum)
     struct rotate_errors errors{0};
     errors.velocity_error = -100000;
 
-    struct rotate_config cfg{};
-    cfg.direction = ROTATE_CLOCKWISE;
-    cfg.control = create_default_rotate_control_config();
-
-    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
 
     CHECK(output.motor_1_speed == 100);
 }
 
 TEST(NavigationTests, RotateStopsMotorsWhenMaxStepsExceeded)
 {
-    struct rotate_config cfg{};
-
-    cfg.direction = ROTATE_CLOCKWISE;
-    cfg.target_ticks = 1000;
-    cfg.control = create_default_rotate_control_config();
-
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
 
@@ -737,7 +701,7 @@ TEST(NavigationTests, RotateStopsMotorsWhenMaxStepsExceeded)
 
     mock().ignoreOtherCalls();
 
-    rotate(cfg);
+    rotate(ROTATE_CLOCKWISE, 1000);
 }
 
 TEST(NavigationTests, RotateClockwise90DegInitializesClockwiseRotation)
@@ -752,8 +716,6 @@ TEST(NavigationTests, RotateClockwise90DegInitializesClockwiseRotation)
     calculate_mouse_params(mouse_params);
     calculate_navigation_params();
 
-    struct rotate_control_config cfg{create_default_rotate_control_config()};
-
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
 
@@ -765,7 +727,7 @@ TEST(NavigationTests, RotateClockwise90DegInitializesClockwiseRotation)
 
     mock().ignoreOtherCalls();
 
-    rotate_clockwise_90_deg(cfg);
+    rotate_clockwise_90_deg();
 }
 
 TEST(NavigationTests, RotateCounterClockwise90DegInitializesCounterClockwiseRotation)
@@ -780,8 +742,6 @@ TEST(NavigationTests, RotateCounterClockwise90DegInitializesCounterClockwiseRota
     calculate_mouse_params(mouse_params);
     calculate_navigation_params();
 
-    struct rotate_control_config cfg{create_default_rotate_control_config()};
-
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
 
@@ -793,7 +753,7 @@ TEST(NavigationTests, RotateCounterClockwise90DegInitializesCounterClockwiseRota
 
     mock().ignoreOtherCalls();
 
-    rotate_counter_clockwise_90_deg(cfg);
+    rotate_counter_clockwise_90_deg();
 }
 
 TEST(NavigationTests, Rotate180DegInitializesClockwiseRotation)
@@ -808,8 +768,6 @@ TEST(NavigationTests, Rotate180DegInitializesClockwiseRotation)
     calculate_mouse_params(mouse_params);
     calculate_navigation_params();
 
-    struct rotate_control_config cfg{create_default_rotate_control_config()};
-
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
 
@@ -821,5 +779,5 @@ TEST(NavigationTests, Rotate180DegInitializesClockwiseRotation)
 
     mock().ignoreOtherCalls();
 
-    rotate_180_deg(cfg);
+    rotate_180_deg();
 }

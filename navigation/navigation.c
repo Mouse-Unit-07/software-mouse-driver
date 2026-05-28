@@ -50,6 +50,11 @@ static struct mouse_calculated_params mouse_params = {0};
 static struct maze_calculated_params maze_params = {0};
 static struct navigation_params navigation_params = {0};
 
+static struct move_forward_control_config no_wall_move_forward_control_config = {0};
+static struct move_forward_control_config one_wall_move_forward_control_config = {0};
+static struct move_forward_control_config both_wall_move_forward_control_config = {0};
+static struct rotate_control_config rotate_control_config = {0};
+
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
 /*----------------------------------------------------------------------------*/
@@ -101,62 +106,66 @@ void calculate_navigation_params(void)
 
 /*----------------------------------------------------------------------------*/
 /* move forward */
-void move_forward(struct move_forward_config cfg)
+void set_no_wall_move_forward_control_config(struct move_forward_control_config cfg)
 {
-    struct move_forward_state state = {0};
+    no_wall_move_forward_control_config = cfg;
+}
 
-    init_move_forward_state(&state);
+void set_one_wall_move_forward_control_config(struct move_forward_control_config cfg)
+{
+    one_wall_move_forward_control_config = cfg;
+}
 
-    const uint32_t MAX_STEPS = 10000u;
-    uint32_t steps = 0u;
+void set_both_wall_move_forward_control_config(struct move_forward_control_config cfg)
+{
+    both_wall_move_forward_control_config = cfg;
+}
 
-    while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks)) {
-        struct move_forward_errors errors = calculate_move_forward_errors(&state, cfg);
-        struct motor_output output = calculate_move_forward_motor_output(errors, cfg.control);
+struct move_forward_control_config get_no_wall_move_forward_control_config(void)
+{
+    return no_wall_move_forward_control_config;
+}
 
-        apply_motor_output(output);
+struct move_forward_control_config get_one_wall_move_forward_control_config(void)
+{
+    return one_wall_move_forward_control_config;
+}
 
-        if (++steps > MAX_STEPS) {
-            break;
-        }
-    }
+struct move_forward_control_config get_both_wall_move_forward_control_config(void)
+{
+    return both_wall_move_forward_control_config;
+}
 
-    stop_motors();
+void move_forward(void)
+{
+    move_forward_with_wall_mode(WALL_FEEDBACK_NONE);
 }
 
 /*----------------------------------------------------------------------------*/
 /* rotation */
-void rotate_clockwise_90_deg(struct rotate_control_config cfg)
+void set_rotate_control_config(struct rotate_control_config cfg)
 {
-    struct rotate_config rotate_cfg = {0};
-
-    rotate_cfg.direction = ROTATE_CLOCKWISE;
-    rotate_cfg.target_ticks = navigation_params.rotate_90_degree_target_ticks;
-    rotate_cfg.control = cfg;
-
-    rotate(rotate_cfg);
+    rotate_control_config = cfg;
 }
 
-void rotate_counter_clockwise_90_deg(struct rotate_control_config cfg)
+struct rotate_control_config get_rotate_control_config(void)
 {
-    struct rotate_config rotate_cfg = {0};
-
-    rotate_cfg.direction = ROTATE_COUNTER_CLOCKWISE;
-    rotate_cfg.target_ticks = navigation_params.rotate_90_degree_target_ticks;
-    rotate_cfg.control = cfg;
-
-    rotate(rotate_cfg);
+    return rotate_control_config;
 }
 
-void rotate_180_deg(struct rotate_control_config cfg)
+void rotate_clockwise_90_deg(void)
 {
-    struct rotate_config rotate_cfg = {0};
+    rotate(ROTATE_CLOCKWISE, navigation_params.rotate_90_degree_target_ticks);
+}
 
-    rotate_cfg.direction = ROTATE_CLOCKWISE;
-    rotate_cfg.target_ticks = navigation_params.rotate_180_degree_target_ticks;
-    rotate_cfg.control = cfg;
+void rotate_counter_clockwise_90_deg(void)
+{
+    rotate(ROTATE_COUNTER_CLOCKWISE, navigation_params.rotate_90_degree_target_ticks);
+}
 
-    rotate(rotate_cfg);
+void rotate_180_deg(void)
+{
+    rotate(ROTATE_CLOCKWISE, navigation_params.rotate_180_degree_target_ticks);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -204,8 +213,42 @@ void init_move_forward_state(struct move_forward_state *state)
     set_wheel_motor_2_direction_forward();
 }
 
+void move_forward_with_wall_mode(enum wall_feedback_mode mode)
+{
+    struct move_forward_state state = {0};
+
+    init_move_forward_state(&state);
+
+    const uint32_t MAX_STEPS = 10000u;
+    uint32_t steps = 0u;
+
+    while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks)) {
+        struct move_forward_control_config cfg = {0};
+        if (mode == WALL_FEEDBACK_NONE) {
+            cfg = no_wall_move_forward_control_config;
+        } else if (mode == WALL_FEEDBACK_BOTH) {
+            cfg = both_wall_move_forward_control_config;
+        } else {
+            cfg = one_wall_move_forward_control_config;
+        }
+
+        struct move_forward_errors errors =
+            calculate_move_forward_errors(&state, mode, cfg.wall_target);
+        struct motor_output output = calculate_move_forward_motor_output(errors, cfg);
+
+        apply_motor_output(output);
+
+        if (++steps > MAX_STEPS) {
+            break;
+        }
+    }
+
+    stop_motors();
+}
+
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
-                                                         struct move_forward_config cfg)
+                                                         enum wall_feedback_mode wall_mode,
+                                                         uint32_t wall_target)
 {
     struct move_forward_errors errors = {0};
 
@@ -227,18 +270,18 @@ struct move_forward_errors calculate_move_forward_errors(struct move_forward_sta
     state->prev_velocity_error = errors.velocity_error;
     state->prev_angle_error = errors.angle_error;
 
-    if (cfg.wall_mode != WALL_FEEDBACK_NONE) {
+    if (wall_mode != WALL_FEEDBACK_NONE) {
 
         int32_t ir_2 = (int32_t)read_ir_2_sensor();
         int32_t ir_3 = (int32_t)read_ir_3_sensor();
 
-        int32_t target_ir = (int32_t)cfg.control.wall_target;
+        int32_t target_ir = (int32_t)wall_target;
 
-        if (cfg.wall_mode == WALL_FEEDBACK_LEFT) {
+        if (wall_mode == WALL_FEEDBACK_LEFT) {
             errors.ir_error = target_ir - ir_2;
-        } else if (cfg.wall_mode == WALL_FEEDBACK_RIGHT) {
+        } else if (wall_mode == WALL_FEEDBACK_RIGHT) {
             errors.ir_error = -(target_ir - ir_3);
-        } else if (cfg.wall_mode == WALL_FEEDBACK_BOTH) {
+        } else if (wall_mode == WALL_FEEDBACK_BOTH) {
             errors.ir_error = ir_3 - ir_2;
         }
     }
@@ -293,18 +336,19 @@ void init_rotate_state(struct rotate_state *state, enum rotation_direction direc
     }
 }
 
-void rotate(struct rotate_config cfg)
+void rotate(enum rotation_direction direction, int32_t target_ticks)
 {
     struct rotate_state state = {0};
 
-    init_rotate_state(&state, cfg.direction);
+    init_rotate_state(&state, direction);
 
     const uint32_t MAX_STEPS = 10000u;
     uint32_t steps = 0u;
 
-    while (!is_tick_average_at_target(cfg.target_ticks)) {
+    while (!is_tick_average_at_target(target_ticks)) {
         struct rotate_errors errors = calculate_rotate_errors(&state);
-        struct motor_output output = calculate_rotate_motor_output(errors, cfg);
+        struct motor_output output =
+            calculate_rotate_motor_output(errors, direction, rotate_control_config);
 
         apply_motor_output(output);
 
@@ -342,31 +386,32 @@ struct rotate_errors calculate_rotate_errors(struct rotate_state *state)
 }
 
 struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
-                                                  struct rotate_config cfg)
+                                                  enum rotation_direction direction,
+                                                  struct rotate_control_config cfg)
 {
     struct motor_output output = {0};
 
-    int64_t p_term_vel = (int64_t)cfg.control.kp_velocity * errors.velocity_error;
-    int64_t d_term_vel = (int64_t)cfg.control.kd_velocity * errors.velocity_derivative;
-    int64_t p_term_ang = (int64_t)cfg.control.kp_angle * errors.angle_error;
-    int64_t d_term_ang = (int64_t)cfg.control.kd_angle * errors.angle_derivative;
+    int64_t p_term_vel = (int64_t)cfg.kp_velocity * errors.velocity_error;
+    int64_t d_term_vel = (int64_t)cfg.kd_velocity * errors.velocity_derivative;
+    int64_t p_term_ang = (int64_t)cfg.kp_angle * errors.angle_error;
+    int64_t d_term_ang = (int64_t)cfg.kd_angle * errors.angle_derivative;
 
     int64_t control_64 = p_term_vel + d_term_vel + p_term_ang + d_term_ang;
-    int32_t control = (int32_t)(control_64 / cfg.control.pid_scale);
+    int32_t control = (int32_t)(control_64 / cfg.pid_scale);
 
     int32_t speed_1 = 0;
     int32_t speed_2 = 0;
 
-    if (cfg.direction == ROTATE_CLOCKWISE) {
-        speed_1 = cfg.control.base_speed + control;
-        speed_2 = cfg.control.base_speed - control;
+    if (direction == ROTATE_CLOCKWISE) {
+        speed_1 = cfg.base_speed + control;
+        speed_2 = cfg.base_speed - control;
     } else {
-        speed_1 = cfg.control.base_speed - control;
-        speed_2 = cfg.control.base_speed + control;
+        speed_1 = cfg.base_speed - control;
+        speed_2 = cfg.base_speed + control;
     }
 
-    speed_1 = clamp_int32(speed_1, cfg.control.min_speed, cfg.control.max_speed);
-    speed_2 = clamp_int32(speed_2, cfg.control.min_speed, cfg.control.max_speed);
+    speed_1 = clamp_int32(speed_1, cfg.min_speed, cfg.max_speed);
+    speed_2 = clamp_int32(speed_2, cfg.min_speed, cfg.max_speed);
 
     output.motor_1_speed = (uint8_t)speed_1;
     output.motor_2_speed = (uint8_t)speed_2;

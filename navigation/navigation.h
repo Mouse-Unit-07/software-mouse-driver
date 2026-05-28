@@ -54,11 +54,6 @@ enum wall_feedback_mode
     WALL_FEEDBACK_BOTH
 };
 
-struct move_forward_config {
-    enum wall_feedback_mode wall_mode;
-    struct move_forward_control_config control;
-};
-
 /* helper structs exposed for testing */
 struct move_forward_state {
     int32_t prev_enc_1_ticks;
@@ -89,20 +84,11 @@ struct rotate_control_config {
     uint8_t base_speed;
     uint8_t min_speed;
     uint8_t max_speed;
-
     int32_t kp_velocity;
     int32_t kd_velocity;
-
     int32_t kp_angle;
     int32_t kd_angle;
-
     int32_t pid_scale;
-};
-
-struct rotate_config {
-    enum rotation_direction direction;
-    int32_t target_ticks;
-    struct rotate_control_config control;
 };
 
 /* helper structs exposed for testing */
@@ -116,7 +102,6 @@ struct rotate_state {
 struct rotate_errors {
     int32_t velocity_error;
     int32_t velocity_derivative;
-
     int32_t angle_error;
     int32_t angle_derivative;
 };
@@ -130,32 +115,46 @@ void calculate_mouse_params(struct mouse_physical_params p);
 void calculate_maze_params(struct maze_physical_params p);
 void calculate_navigation_params(void);
 
+/* helpers exposed for testing */
 bool is_tick_average_at_target(int32_t target_ticks);
 void apply_motor_output(struct motor_output output);
 void stop_motors(void);
 
 /*----------------------------------------------------------------------------*/
 /* move forward */
-void move_forward(struct move_forward_config cfg);
+void move_forward(void);
+
+void set_no_wall_move_forward_control_config(struct move_forward_control_config cfg);
+void set_one_wall_move_forward_control_config(struct move_forward_control_config cfg);
+void set_both_wall_move_forward_control_config(struct move_forward_control_config cfg);
+struct move_forward_control_config get_no_wall_move_forward_control_config(void);
+struct move_forward_control_config get_one_wall_move_forward_control_config(void);
+struct move_forward_control_config get_both_wall_move_forward_control_config(void);
 
 /* helpers exposed for testing */
 void init_move_forward_state(struct move_forward_state *state);
+void move_forward_with_wall_mode(enum wall_feedback_mode mode);
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
-                                                         struct move_forward_config cfg);
+                                                         enum wall_feedback_mode wall_mode,
+                                                         uint32_t wall_target);
 struct motor_output calculate_move_forward_motor_output(struct move_forward_errors errors,
                                                         struct move_forward_control_config cfg);
 
 /*----------------------------------------------------------------------------*/
 /* rotation */
-void rotate_clockwise_90_deg(struct rotate_control_config cfg);
-void rotate_counter_clockwise_90_deg(struct rotate_control_config cfg);
-void rotate_180_deg(struct rotate_control_config cfg);
+void rotate_clockwise_90_deg(void);
+void rotate_counter_clockwise_90_deg(void);
+void rotate_180_deg(void);
+
+void set_rotate_control_config(struct rotate_control_config cfg);
+struct rotate_control_config get_rotate_control_config(void);
 
 /* helpers exposed for testing */
 void init_rotate_state(struct rotate_state *state, enum rotation_direction direction);
-void rotate(struct rotate_config cfg);
+void rotate(enum rotation_direction direction, int32_t target_ticks);
 struct rotate_errors calculate_rotate_errors(struct rotate_state *state);
 struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
-                                                  struct rotate_config cfg);
+                                                  enum rotation_direction direction,
+                                                  struct rotate_control_config cfg);
 
 #endif /* NAVIGATION_H_ */
