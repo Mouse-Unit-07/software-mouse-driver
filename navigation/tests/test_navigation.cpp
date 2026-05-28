@@ -143,6 +143,25 @@ struct move_forward_control_config create_default_control_config(void)
     return cfg;
 }
 
+struct rotate_control_config create_default_rotate_control_config(void)
+{
+    struct rotate_control_config cfg = {0};
+
+    cfg.base_speed = 200u;
+    cfg.min_speed = 100u;
+    cfg.max_speed = 255u;
+
+    cfg.kp_velocity = 1;
+    cfg.kd_velocity = 1;
+
+    cfg.kp_angle = 1;
+    cfg.kd_angle = 1;
+
+    cfg.pid_scale = 1;
+
+    return cfg;
+}
+
 /*============================================================================*/
 /*                                 Test Group                                 */
 /*============================================================================*/
@@ -165,6 +184,59 @@ TEST_GROUP(NavigationTests)
 /*============================================================================*/
 /*                                    Tests                                   */
 /*============================================================================*/
+TEST(NavigationTests, ApplyMotorOutputSetsMotorSpeeds)
+{
+    struct motor_output output{0};
+
+    output.motor_1_speed = 123u;
+    output.motor_2_speed = 234u;
+
+    mock().expectOneCall("set_wheel_motor_1_speed")
+        .withUnsignedIntParameter("speed", 123u);
+
+    mock().expectOneCall("set_wheel_motor_2_speed")
+        .withUnsignedIntParameter("speed", 234u);
+
+    apply_motor_output(output);
+}
+
+TEST(NavigationTests, StopMotorsSetsMotorSpeedsToZero)
+{
+    mock().expectOneCall("set_wheel_motor_1_speed")
+          .withUnsignedIntParameter("speed", 0u);
+
+    mock().expectOneCall("set_wheel_motor_2_speed")
+          .withUnsignedIntParameter("speed", 0u);
+
+    stop_motors();
+}
+
+TEST(NavigationTests, IsTickAverageAtTargetReturnsFalseWhenBelowTarget)
+{
+    fake_encoder_1_ticks = 40;
+    fake_encoder_2_ticks = 60;
+
+    CHECK_FALSE(is_tick_average_at_target(60));
+}
+
+TEST(NavigationTests, IsTickAverageAtTargetReturnsTrueWhenAtTarget)
+{
+    fake_encoder_1_ticks = 50;
+    fake_encoder_2_ticks = 70;
+
+    CHECK(is_tick_average_at_target(60));
+}
+
+TEST(NavigationTests, IsTickAverageAtTargetUsesAbsoluteEncoderValues)
+{
+    fake_encoder_1_ticks = -80;
+    fake_encoder_2_ticks = -120;
+
+    CHECK(is_tick_average_at_target(100));
+}
+
+/*----------------------------------------------------------------------------*/
+/* move forward */
 TEST(NavigationTests, InitMoveForwardStateClearsStateAndInitializesHardware)
 {
     struct move_forward_state state{0};
@@ -394,33 +466,6 @@ TEST(NavigationTests, CalculateMoveForwardMotorOutputClampsMinimum)
     CHECK(output.motor_1_speed == 100);
 }
 
-TEST(NavigationTests, ApplyMotorOutputSetsMotorSpeeds)
-{
-    struct motor_output output{0};
-
-    output.motor_1_speed = 123u;
-    output.motor_2_speed = 234u;
-
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 123u);
-
-    mock().expectOneCall("set_wheel_motor_2_speed")
-        .withUnsignedIntParameter("speed", 234u);
-
-    apply_motor_output(output);
-}
-
-TEST(NavigationTests, StopMotorsSetsMotorSpeedsToZero)
-{
-    mock().expectOneCall("set_wheel_motor_1_speed")
-          .withUnsignedIntParameter("speed", 0u);
-
-    mock().expectOneCall("set_wheel_motor_2_speed")
-          .withUnsignedIntParameter("speed", 0u);
-
-    stop_motors();
-}
-
 TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
 {
     struct mouse_physical_params mouse_params{};
@@ -454,4 +499,327 @@ TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
     mock().ignoreOtherCalls();
 
     move_forward(cfg);
+}
+
+/*----------------------------------------------------------------------------*/
+/* rotation */
+TEST(NavigationTests, InitRotateStateClockwiseInitializesHardware)
+{
+    struct rotate_state state{0};
+
+    state.prev_enc_1_ticks = 1;
+    state.prev_enc_2_ticks = 2;
+    state.prev_velocity_error = 3;
+    state.prev_angle_error = 4;
+
+    mock().expectOneCall("clear_1_encoder_ticks");
+    mock().expectOneCall("clear_2_encoder_ticks");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+
+    init_rotate_state(&state, ROTATE_CLOCKWISE);
+
+    CHECK(state.prev_enc_1_ticks == 0);
+    CHECK(state.prev_enc_2_ticks == 0);
+    CHECK(state.prev_velocity_error == 0);
+    CHECK(state.prev_angle_error == 0);
+}
+
+TEST(NavigationTests, InitRotateStateCounterClockwiseInitializesHardware)
+{
+    struct rotate_state state{0};
+
+    mock().expectOneCall("clear_1_encoder_ticks");
+    mock().expectOneCall("clear_2_encoder_ticks");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
+
+    init_rotate_state(&state, ROTATE_COUNTER_CLOCKWISE);
+}
+
+TEST(NavigationTests, CalculateRotateErrorsCalculatesVelocityError)
+{
+    struct rotate_state state{0};
+
+    fake_encoder_1_ticks = 100;
+    fake_encoder_2_ticks = 130;
+
+    struct rotate_errors errors{calculate_rotate_errors(&state)};
+
+    CHECK(errors.velocity_error == 30);
+}
+
+TEST(NavigationTests, CalculateRotateErrorsCalculatesVelocityDerivative)
+{
+    struct rotate_state state{0};
+    state.prev_velocity_error = 10;
+
+    fake_encoder_1_ticks = 100;
+    fake_encoder_2_ticks = 140;
+
+    struct rotate_errors errors{calculate_rotate_errors(&state)};
+
+    CHECK(errors.velocity_error == 40);
+    CHECK(errors.velocity_derivative == 30);
+}
+
+TEST(NavigationTests, CalculateRotateErrorsCalculatesAngleError)
+{
+    struct rotate_state state{0};
+
+    fake_encoder_1_ticks = 50;
+    fake_encoder_2_ticks = 90;
+
+    struct rotate_errors errors{calculate_rotate_errors(&state)};
+
+    CHECK(errors.angle_error == 40);
+}
+
+TEST(NavigationTests, CalculateRotateErrorsCalculatesAngleDerivative)
+{
+    struct rotate_state state{0};
+    state.prev_angle_error = 5;
+
+    fake_encoder_1_ticks = 20;
+    fake_encoder_2_ticks = 50;
+
+    struct rotate_errors errors{calculate_rotate_errors(&state)};
+
+    CHECK(errors.angle_error == 30);
+    CHECK(errors.angle_derivative == 25);
+}
+
+TEST(NavigationTests, CalculateRotateErrorsUpdatesState)
+{
+    struct rotate_state state{0};
+
+    fake_encoder_1_ticks = 70;
+    fake_encoder_2_ticks = 100;
+
+    calculate_rotate_errors(&state);
+
+    CHECK(state.prev_enc_1_ticks == 70);
+    CHECK(state.prev_enc_2_ticks == 100);
+
+    CHECK(state.prev_velocity_error == 30);
+    CHECK(state.prev_angle_error == 30);
+}
+
+TEST(NavigationTests, CalculateRotateErrorsUsesAbsoluteEncoderValues)
+{
+    struct rotate_state state{0};
+
+    fake_encoder_1_ticks = -100;
+    fake_encoder_2_ticks = -130;
+
+    struct rotate_errors errors{calculate_rotate_errors(&state)};
+
+    CHECK(errors.velocity_error == 30);
+    CHECK(errors.angle_error == 30);
+}
+
+TEST(NavigationTests, CalculateRotateMotorOutputClockwiseZeroErrorUsesBaseSpeed)
+{
+    struct rotate_errors errors{0};
+
+    struct rotate_config cfg{};
+    cfg.direction = ROTATE_CLOCKWISE;
+    cfg.control = create_default_rotate_control_config();
+
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+
+    CHECK(output.motor_1_speed == 200);
+    CHECK(output.motor_2_speed == 200);
+}
+
+TEST(NavigationTests, CalculateRotateMotorOutputClockwisePositiveControl)
+{
+    struct rotate_errors errors{0};
+    errors.velocity_error = 10;
+
+    struct rotate_config cfg{};
+    cfg.direction = ROTATE_CLOCKWISE;
+    cfg.control = create_default_rotate_control_config();
+
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+
+    CHECK(output.motor_1_speed > output.motor_2_speed);
+}
+
+TEST(NavigationTests, CalculateRotateMotorOutputClockwiseNegativeControl)
+{
+    struct rotate_errors errors{0};
+    errors.velocity_error = -10;
+
+    struct rotate_config cfg{};
+    cfg.direction = ROTATE_CLOCKWISE;
+    cfg.control = create_default_rotate_control_config();
+
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+
+    CHECK(output.motor_2_speed > output.motor_1_speed);
+}
+
+TEST(NavigationTests, CalculateRotateMotorOutputCounterClockwisePositiveControl)
+{
+    struct rotate_errors errors{0};
+    errors.velocity_error = 10;
+
+    struct rotate_config cfg{};
+    cfg.direction = ROTATE_COUNTER_CLOCKWISE;
+    cfg.control = create_default_rotate_control_config();
+
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+
+    CHECK(output.motor_2_speed > output.motor_1_speed);
+}
+
+TEST(NavigationTests, CalculateRotateMotorOutputCounterClockwiseNegativeControl)
+{
+    struct rotate_errors errors{0};
+    errors.velocity_error = -10;
+
+    struct rotate_config cfg{};
+    cfg.direction = ROTATE_COUNTER_CLOCKWISE;
+    cfg.control = create_default_rotate_control_config();
+
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+
+    CHECK(output.motor_1_speed > output.motor_2_speed);
+}
+
+TEST(NavigationTests, CalculateRotateMotorOutputClampsMaximum)
+{
+    struct rotate_errors errors{0};
+    errors.velocity_error = 100000;
+
+    struct rotate_config cfg{};
+    cfg.direction = ROTATE_CLOCKWISE;
+    cfg.control = create_default_rotate_control_config();
+
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+
+    CHECK(output.motor_1_speed == 255);
+}
+
+TEST(NavigationTests, CalculateRotateMotorOutputClampsMinimum)
+{
+    struct rotate_errors errors{0};
+    errors.velocity_error = -100000;
+
+    struct rotate_config cfg{};
+    cfg.direction = ROTATE_CLOCKWISE;
+    cfg.control = create_default_rotate_control_config();
+
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
+
+    CHECK(output.motor_1_speed == 100);
+}
+
+TEST(NavigationTests, RotateStopsMotorsWhenMaxStepsExceeded)
+{
+    struct rotate_config cfg{};
+
+    cfg.direction = ROTATE_CLOCKWISE;
+    cfg.target_ticks = 1000;
+    cfg.control = create_default_rotate_control_config();
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    mock().expectOneCall("clear_1_encoder_ticks");
+    mock().expectOneCall("clear_2_encoder_ticks");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+
+    mock().ignoreOtherCalls();
+
+    rotate(cfg);
+}
+
+TEST(NavigationTests, RotateClockwise90DegInitializesClockwiseRotation)
+{
+    struct mouse_physical_params mouse_params{};
+    mouse_params.wheel_diameter_mm = 32.0;
+    mouse_params.wheel_base_mm = 90.0;
+    mouse_params.encoder_events_per_revolution = 60.0;
+    mouse_params.motor_pinion_gear_teeth = 13.0;
+    mouse_params.wheel_gear_teeth = 44.0;
+
+    calculate_mouse_params(mouse_params);
+    calculate_navigation_params();
+
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    mock().expectOneCall("clear_1_encoder_ticks");
+    mock().expectOneCall("clear_2_encoder_ticks");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+
+    mock().ignoreOtherCalls();
+
+    rotate_clockwise_90_deg(cfg);
+}
+
+TEST(NavigationTests, RotateCounterClockwise90DegInitializesCounterClockwiseRotation)
+{
+    struct mouse_physical_params mouse_params{};
+    mouse_params.wheel_diameter_mm = 32.0;
+    mouse_params.wheel_base_mm = 90.0;
+    mouse_params.encoder_events_per_revolution = 60.0;
+    mouse_params.motor_pinion_gear_teeth = 13.0;
+    mouse_params.wheel_gear_teeth = 44.0;
+
+    calculate_mouse_params(mouse_params);
+    calculate_navigation_params();
+
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    mock().expectOneCall("clear_1_encoder_ticks");
+    mock().expectOneCall("clear_2_encoder_ticks");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
+
+    mock().ignoreOtherCalls();
+
+    rotate_counter_clockwise_90_deg(cfg);
+}
+
+TEST(NavigationTests, Rotate180DegInitializesClockwiseRotation)
+{
+    struct mouse_physical_params mouse_params{};
+    mouse_params.wheel_diameter_mm = 32.0;
+    mouse_params.wheel_base_mm = 90.0;
+    mouse_params.encoder_events_per_revolution = 60.0;
+    mouse_params.motor_pinion_gear_teeth = 13.0;
+    mouse_params.wheel_gear_teeth = 44.0;
+
+    calculate_mouse_params(mouse_params);
+    calculate_navigation_params();
+
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    mock().expectOneCall("clear_1_encoder_ticks");
+    mock().expectOneCall("clear_2_encoder_ticks");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+
+    mock().ignoreOtherCalls();
+
+    rotate_180_deg(cfg);
 }

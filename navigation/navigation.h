@@ -24,6 +24,14 @@ struct maze_physical_params {
     double wall_size_mm;
 };
 
+/* helper structs exposed for testing */
+struct motor_output {
+    uint8_t motor_1_speed;
+    uint8_t motor_2_speed;
+};
+
+/*----------------------------------------------------------------------------*/
+/* move forward */
 struct move_forward_control_config {
     uint8_t base_speed;
     uint8_t min_speed;
@@ -69,9 +77,48 @@ struct move_forward_errors {
     int32_t ir_derivative;
 };
 
-struct motor_output {
-    uint8_t motor_1_speed;
-    uint8_t motor_2_speed;
+/*----------------------------------------------------------------------------*/
+/* rotation */
+enum rotation_direction
+{
+    ROTATE_CLOCKWISE,
+    ROTATE_COUNTER_CLOCKWISE
+};
+
+struct rotate_control_config {
+    uint8_t base_speed;
+    uint8_t min_speed;
+    uint8_t max_speed;
+
+    int32_t kp_velocity;
+    int32_t kd_velocity;
+
+    int32_t kp_angle;
+    int32_t kd_angle;
+
+    int32_t pid_scale;
+};
+
+struct rotate_config {
+    enum rotation_direction direction;
+    int32_t target_ticks;
+    struct rotate_control_config control;
+};
+
+/* helper structs exposed for testing */
+struct rotate_state {
+    int32_t prev_enc_1_ticks;
+    int32_t prev_enc_2_ticks;
+    int32_t prev_velocity_error;
+    int32_t prev_angle_error;
+};
+
+struct rotate_errors {
+    int32_t velocity_error;
+    int32_t velocity_derivative;
+
+    int32_t angle_error;
+    int32_t angle_derivative;
 };
 
 /*----------------------------------------------------------------------------*/
@@ -83,17 +130,32 @@ void calculate_mouse_params(struct mouse_physical_params p);
 void calculate_maze_params(struct maze_physical_params p);
 void calculate_navigation_params(void);
 
+bool is_tick_average_at_target(int32_t target_ticks);
+void apply_motor_output(struct motor_output output);
+void stop_motors(void);
+
+/*----------------------------------------------------------------------------*/
+/* move forward */
 void move_forward(struct move_forward_config cfg);
 
 /* helpers exposed for testing */
 void init_move_forward_state(struct move_forward_state *state);
-bool is_move_forward_complete(void);
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
                                                          struct move_forward_config cfg);
 struct motor_output calculate_move_forward_motor_output(struct move_forward_errors errors,
                                                         struct move_forward_control_config cfg);
 
-void apply_motor_output(struct motor_output output);
-void stop_motors(void);
+/*----------------------------------------------------------------------------*/
+/* rotation */
+void rotate_clockwise_90_deg(struct rotate_control_config cfg);
+void rotate_counter_clockwise_90_deg(struct rotate_control_config cfg);
+void rotate_180_deg(struct rotate_control_config cfg);
+
+/* helpers exposed for testing */
+void init_rotate_state(struct rotate_state *state, enum rotation_direction direction);
+void rotate(struct rotate_config cfg);
+struct rotate_errors calculate_rotate_errors(struct rotate_state *state);
+struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
+                                                  struct rotate_config cfg);
 
 #endif /* NAVIGATION_H_ */
