@@ -119,6 +119,8 @@ void reset_encoder_mocks(void)
 /*============================================================================*/
 /*                             Public Definitions                             */
 /*============================================================================*/
+constexpr double FLOAT_TOLERANCE{1e-6};
+
 struct move_forward_control_config create_default_control_config(void)
 {
     struct move_forward_control_config cfg = {0};
@@ -174,6 +176,7 @@ TEST_GROUP(NavigationTests)
     void setup() override
     {
         mock().clear();
+        init_navigation();
         reset_encoder_mocks();
         reset_ir_mocks();
         set_move_forward_control_configs();
@@ -184,12 +187,242 @@ TEST_GROUP(NavigationTests)
     {
         mock().checkExpectations();
         mock().clear();
+        deinit_navigation();
     }
 };
 
 /*============================================================================*/
 /*                                    Tests                                   */
 /*============================================================================*/
+TEST(NavigationTests, InitNavigationClearsNavigationParameters)
+{
+    struct mouse_physical_params mouse{};
+    mouse.wheel_diameter_mm = 32.0;
+    mouse.wheel_base_mm = 90.0;
+    mouse.encoder_events_per_revolution = 60.0;
+    mouse.motor_pinion_gear_teeth = 13.0;
+    mouse.wheel_gear_teeth = 44.0;
+
+    struct maze_physical_params maze{};
+    maze.post_size_mm = 168.0;
+    maze.wall_size_mm = 12.0;
+
+    calculate_mouse_params(mouse);
+    calculate_maze_params(maze);
+    calculate_navigation_params();
+
+    init_navigation();
+
+    struct mouse_physical_params expected_mouse_phys{};
+    struct mouse_calculated_params expected_mouse_calc{};
+    struct maze_physical_params expected_maze_phys{};
+    struct maze_calculated_params expected_maze_calc{};
+    struct navigation_params expected_nav{};
+
+    struct mouse_physical_params actual_mouse_phys = get_mouse_physical_params();
+    struct mouse_calculated_params actual_mouse_calc = get_mouse_calculated_params();
+    struct maze_physical_params actual_maze_phys = get_maze_physical_params();
+    struct maze_calculated_params actual_maze_calc = get_maze_calculated_params();
+    struct navigation_params actual_nav = get_navigation_params();
+
+    MEMCMP_EQUAL(&expected_mouse_phys, &actual_mouse_phys, sizeof(expected_mouse_phys));
+    MEMCMP_EQUAL(&expected_mouse_calc, &actual_mouse_calc, sizeof(expected_mouse_calc));
+    MEMCMP_EQUAL(&expected_maze_phys, &actual_maze_phys, sizeof(expected_maze_phys));
+    MEMCMP_EQUAL(&expected_maze_calc, &actual_maze_calc, sizeof(expected_maze_calc));
+    MEMCMP_EQUAL(&expected_nav, &actual_nav, sizeof(expected_nav));
+}
+
+TEST(NavigationTests, InitNavigationClearsMoveForwardConfigs)
+{
+    struct move_forward_control_config cfg{create_default_control_config()};
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    init_navigation();
+
+    struct move_forward_control_config no_wall = get_no_wall_move_forward_control_config();
+    struct move_forward_control_config one_wall = get_one_wall_move_forward_control_config();
+    struct move_forward_control_config both_wall = get_both_wall_move_forward_control_config();
+
+    struct move_forward_control_config expected = {0};
+
+    MEMCMP_EQUAL(&expected, &no_wall, sizeof(no_wall));
+    MEMCMP_EQUAL(&expected, &one_wall, sizeof(one_wall));
+    MEMCMP_EQUAL(&expected, &both_wall, sizeof(both_wall));
+}
+
+TEST(NavigationTests, InitNavigationClearsRotateConfig)
+{
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+
+    set_rotate_control_config(cfg);
+
+    init_navigation();
+
+    struct rotate_control_config actual = get_rotate_control_config();
+    struct rotate_control_config expected = {0};
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
+}
+
+TEST(NavigationTests, DeinitNavigationClearsNavigationParameters)
+{
+    struct mouse_physical_params mouse{};
+    mouse.wheel_diameter_mm = 32.0;
+    mouse.wheel_base_mm = 90.0;
+    mouse.encoder_events_per_revolution = 60.0;
+    mouse.motor_pinion_gear_teeth = 13.0;
+    mouse.wheel_gear_teeth = 44.0;
+
+    struct maze_physical_params maze{};
+    maze.post_size_mm = 168.0;
+    maze.wall_size_mm = 12.0;
+
+    calculate_mouse_params(mouse);
+    calculate_maze_params(maze);
+    calculate_navigation_params();
+
+    deinit_navigation();
+
+    struct mouse_physical_params expected_mouse_phys{};
+    struct mouse_calculated_params expected_mouse_calc{};
+    struct maze_physical_params expected_maze_phys{};
+    struct maze_calculated_params expected_maze_calc{};
+    struct navigation_params expected_nav{};
+
+    struct mouse_physical_params actual_mouse_phys = get_mouse_physical_params();
+    struct mouse_calculated_params actual_mouse_calc = get_mouse_calculated_params();
+    struct maze_physical_params actual_maze_phys = get_maze_physical_params();
+    struct maze_calculated_params actual_maze_calc = get_maze_calculated_params();
+    struct navigation_params actual_nav = get_navigation_params();
+
+    MEMCMP_EQUAL(&expected_mouse_phys, &actual_mouse_phys, sizeof(expected_mouse_phys));
+    MEMCMP_EQUAL(&expected_mouse_calc, &actual_mouse_calc, sizeof(expected_mouse_calc));
+    MEMCMP_EQUAL(&expected_maze_phys, &actual_maze_phys, sizeof(expected_maze_phys));
+    MEMCMP_EQUAL(&expected_maze_calc, &actual_maze_calc, sizeof(expected_maze_calc));
+    MEMCMP_EQUAL(&expected_nav, &actual_nav, sizeof(expected_nav));
+}
+
+TEST(NavigationTests, DeinitNavigationClearsMoveForwardConfigs)
+{
+    struct move_forward_control_config cfg{create_default_control_config()};
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    deinit_navigation();
+
+    struct move_forward_control_config no_wall = get_no_wall_move_forward_control_config();
+    struct move_forward_control_config one_wall = get_one_wall_move_forward_control_config();
+    struct move_forward_control_config both_wall = get_both_wall_move_forward_control_config();
+
+    struct move_forward_control_config expected = {0};
+
+    MEMCMP_EQUAL(&expected, &no_wall, sizeof(no_wall));
+    MEMCMP_EQUAL(&expected, &one_wall, sizeof(one_wall));
+    MEMCMP_EQUAL(&expected, &both_wall, sizeof(both_wall));
+}
+
+TEST(NavigationTests, DeinitNavigationClearsRotateConfig)
+{
+    struct rotate_control_config cfg{create_default_rotate_control_config()};
+
+    set_rotate_control_config(cfg);
+
+    deinit_navigation();
+
+    struct rotate_control_config actual = get_rotate_control_config();
+    struct rotate_control_config expected = {0};
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
+}
+
+TEST(NavigationTests, CalculateMouseParamsStoresPhysicalParameters)
+{
+    struct mouse_physical_params expected{};
+    expected.wheel_diameter_mm = 32.0;
+    expected.wheel_base_mm = 90.0;
+    expected.max_motor_rpm = 1000.0;
+    expected.encoder_events_per_revolution = 60.0;
+    expected.motor_pinion_gear_teeth = 13.0;
+    expected.wheel_gear_teeth = 44.0;
+
+    calculate_mouse_params(expected);
+
+    struct mouse_physical_params actual = get_mouse_physical_params();
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
+}
+
+TEST(NavigationTests, CalculateMazeParamsStoresPhysicalParameters)
+{
+    struct maze_physical_params expected{};
+    expected.post_size_mm = 168.0;
+    expected.wall_size_mm = 12.0;
+
+    calculate_maze_params(expected);
+
+    struct maze_physical_params actual = get_maze_physical_params();
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
+}
+
+TEST(NavigationTests, CalculateMouseParamsCalculatesDerivedParameters)
+{
+    struct mouse_physical_params p{};
+    p.wheel_diameter_mm = 32.0;
+    p.wheel_base_mm = 90.0;
+    p.encoder_events_per_revolution = 60.0;
+    p.motor_pinion_gear_teeth = 13.0;
+    p.wheel_gear_teeth = 44.0;
+
+    calculate_mouse_params(p);
+
+    struct mouse_calculated_params actual = get_mouse_calculated_params();
+
+    DOUBLES_EQUAL(13.0 / 44.0, actual.gear_ratio, FLOAT_TOLERANCE);
+}
+
+TEST(NavigationTests, CalculateMazeParamsCalculatesCellSize)
+{
+    struct maze_physical_params p{};
+    p.post_size_mm = 168.0;
+    p.wall_size_mm = 12.0;
+
+    calculate_maze_params(p);
+
+    struct maze_calculated_params actual = get_maze_calculated_params();
+
+    DOUBLES_EQUAL(180.0, actual.cell_size_mm, FLOAT_TOLERANCE);
+}
+
+TEST(NavigationTests, CalculateNavigationParamsCalculatesTargets)
+{
+    struct mouse_physical_params mouse{};
+    mouse.wheel_diameter_mm = 32.0;
+    mouse.wheel_base_mm = 90.0;
+    mouse.encoder_events_per_revolution = 60.0;
+    mouse.motor_pinion_gear_teeth = 13.0;
+    mouse.wheel_gear_teeth = 44.0;
+
+    struct maze_physical_params maze{};
+    maze.post_size_mm = 168.0;
+    maze.wall_size_mm = 12.0;
+
+    calculate_mouse_params(mouse);
+    calculate_maze_params(maze);
+    calculate_navigation_params();
+
+    struct navigation_params nav = get_navigation_params();
+
+    CHECK(nav.move_forward_one_cell_target_ticks == 90);
+    CHECK(nav.rotate_90_degree_target_ticks == 35);
+    CHECK(nav.rotate_180_degree_target_ticks == 71);
+}
+
 TEST(NavigationTests, ApplyMotorOutputSetsMotorSpeeds)
 {
     struct motor_output output{0};

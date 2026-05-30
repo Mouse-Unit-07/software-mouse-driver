@@ -19,9 +19,26 @@ struct mouse_physical_params {
     double wheel_gear_teeth;
 };
 
+struct mouse_calculated_params {
+    double gear_ratio;
+    double encoder_ticks_per_revolution;
+    double encoder_ticks_per_millimeter;
+    double encoder_ticks_per_rotation_radian;
+};
+
 struct maze_physical_params {
     double post_size_mm;
     double wall_size_mm;
+};
+
+struct maze_calculated_params {
+    double cell_size_mm;
+};
+
+struct navigation_params {
+    int32_t move_forward_one_cell_target_ticks;
+    int32_t rotate_90_degree_target_ticks;
+    int32_t rotate_180_degree_target_ticks;
 };
 
 /* helper structs exposed for testing */
@@ -114,6 +131,12 @@ void deinit_navigation(void);
 void calculate_mouse_params(struct mouse_physical_params p);
 void calculate_maze_params(struct maze_physical_params p);
 void calculate_navigation_params(void);
+struct mouse_physical_params get_mouse_physical_params(void);
+struct mouse_calculated_params get_mouse_calculated_params(void);
+struct maze_physical_params get_maze_physical_params(void);
+struct maze_calculated_params get_maze_calculated_params(void);
+struct navigation_params get_navigation_params(void);
+
 
 /* helpers exposed for testing */
 bool is_tick_average_at_target(int32_t target_ticks);

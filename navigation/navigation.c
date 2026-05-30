@@ -21,22 +21,7 @@
 /*----------------------------------------------------------------------------*/
 /*                           Struct, Enum, Typedefs                           */
 /*----------------------------------------------------------------------------*/
-struct maze_calculated_params {
-    double cell_size_mm;
-};
-
-struct mouse_calculated_params {
-    double gear_ratio;
-    double encoder_ticks_per_revolution;
-    double encoder_ticks_per_millimeter;
-    double encoder_ticks_per_rotation_radian;
-};
-
-struct navigation_params {
-    int32_t move_forward_one_cell_target_ticks;
-    int32_t rotate_90_degree_target_ticks;
-    int32_t rotate_180_degree_target_ticks;
-};
+/* none */
 
 /*----------------------------------------------------------------------------*/
 /*                         Private Function Prototypes                        */
@@ -46,7 +31,9 @@ static int32_t clamp_int32(int32_t val, int32_t min, int32_t max);
 /*----------------------------------------------------------------------------*/
 /*                               Private Globals                              */
 /*----------------------------------------------------------------------------*/
+static struct mouse_physical_params mouse_physical_params = {0};
 static struct mouse_calculated_params mouse_params = {0};
+static struct maze_physical_params maze_physical_params = {0};
 static struct maze_calculated_params maze_params = {0};
 static struct navigation_params navigation_params = {0};
 
@@ -60,20 +47,36 @@ static struct rotate_control_config rotate_control_config = {0};
 /*----------------------------------------------------------------------------*/
 void init_navigation(void)
 {
+    memset(&mouse_physical_params, 0, sizeof(mouse_physical_params));
     memset(&mouse_params, 0, sizeof(mouse_params));
+    memset(&maze_physical_params, 0, sizeof(maze_physical_params));
     memset(&maze_params, 0, sizeof(maze_params));
     memset(&navigation_params, 0, sizeof(navigation_params));
+
+    memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
+    memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
+    memset(&both_wall_move_forward_control_config, 0, sizeof(both_wall_move_forward_control_config));
+    memset(&rotate_control_config, 0, sizeof(rotate_control_config));
 }
 
 void deinit_navigation(void)
 {
+    memset(&mouse_physical_params, 0, sizeof(mouse_physical_params));
     memset(&mouse_params, 0, sizeof(mouse_params));
+    memset(&maze_physical_params, 0, sizeof(maze_physical_params));
     memset(&maze_params, 0, sizeof(maze_params));
     memset(&navigation_params, 0, sizeof(navigation_params));
+
+    memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
+    memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
+    memset(&both_wall_move_forward_control_config, 0, sizeof(both_wall_move_forward_control_config));
+    memset(&rotate_control_config, 0, sizeof(rotate_control_config));
 }
 
 void calculate_mouse_params(struct mouse_physical_params p)
 {
+    mouse_physical_params = p;
+
     mouse_params.gear_ratio = p.motor_pinion_gear_teeth / p.wheel_gear_teeth;
 
     mouse_params.encoder_ticks_per_revolution =
@@ -89,6 +92,8 @@ void calculate_mouse_params(struct mouse_physical_params p)
 
 void calculate_maze_params(struct maze_physical_params p)
 {
+    maze_physical_params = p;
+
     maze_params.cell_size_mm = p.post_size_mm + p.wall_size_mm;
 }
 
@@ -102,6 +107,31 @@ void calculate_navigation_params(void)
 
     navigation_params.rotate_180_degree_target_ticks =
         (int32_t)(M_PI * mouse_params.encoder_ticks_per_rotation_radian);
+}
+
+struct mouse_physical_params get_mouse_physical_params(void)
+{
+    return mouse_physical_params;
+}
+
+struct mouse_calculated_params get_mouse_calculated_params(void)
+{
+    return mouse_params;
+}
+
+struct maze_physical_params get_maze_physical_params(void)
+{
+    return maze_physical_params;
+}
+
+struct maze_calculated_params get_maze_calculated_params(void)
+{
+    return maze_params;
+}
+
+struct navigation_params get_navigation_params(void)
+{
+    return navigation_params;
 }
 
 /*----------------------------------------------------------------------------*/
