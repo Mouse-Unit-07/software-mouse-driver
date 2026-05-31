@@ -50,6 +50,9 @@ static struct front_wall_detection_config front_wall_detection_config = {0};
 static bool left_wall_present = false;
 static bool right_wall_present = false;
 
+static struct move_forward_statistics move_forward_statistics = {0};
+static struct rotate_statistics rotate_statistics = {0};
+
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
 /*----------------------------------------------------------------------------*/
@@ -74,6 +77,9 @@ void init_navigation(void)
 
     left_wall_present = false;
     right_wall_present = false;
+
+    memset(&move_forward_statistics, 0, sizeof(move_forward_statistics));
+    memset(&rotate_statistics, 0, sizeof(rotate_statistics));
 }
 
 void deinit_navigation(void)
@@ -97,6 +103,9 @@ void deinit_navigation(void)
 
     left_wall_present = false;
     right_wall_present = false;
+
+    memset(&move_forward_statistics, 0, sizeof(move_forward_statistics));
+    memset(&rotate_statistics, 0, sizeof(rotate_statistics));
 }
 
 void calculate_mouse_params(struct mouse_physical_params p)
@@ -286,6 +295,18 @@ struct front_wall_detection_config get_front_wall_detection_config(void)
 }
 
 /*----------------------------------------------------------------------------*/
+/* telemetry */
+struct move_forward_statistics get_move_forward_statistics(void)
+{
+    return move_forward_statistics;
+}
+
+struct rotate_statistics get_rotate_statistics(void)
+{
+    return rotate_statistics;
+}
+
+/*----------------------------------------------------------------------------*/
 /*                        Private Function Definitions                        */
 /*----------------------------------------------------------------------------*/
 static int32_t clamp_int32(int32_t val, int32_t min, int32_t max)
@@ -338,6 +359,8 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
     init_move_forward_state(&state);
     init_side_wall_detector(&detector);
 
+    memset(&move_forward_statistics, 0, sizeof(move_forward_statistics));
+
     const uint32_t MAX_STEPS = 10000u;
     uint32_t steps = 0u;
 
@@ -364,6 +387,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
         apply_motor_output(output);
 
         if (++steps > MAX_STEPS) {
+            move_forward_statistics.timeout_occurred = true;
             break;
         }
     }
@@ -372,6 +396,12 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
     left_wall_present = determine_wall_presence(&detector, true);
     right_wall_present = determine_wall_presence(&detector, false);
+
+    move_forward_statistics.control_loop_iterations = steps;
+    move_forward_statistics.final_encoder_1_ticks = get_encoder_1_ticks();
+    move_forward_statistics.final_encoder_2_ticks = get_encoder_2_ticks();
+    move_forward_statistics.left_wall_present = left_wall_present;
+    move_forward_statistics.right_wall_present = right_wall_present;
 }
 
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
@@ -470,6 +500,8 @@ void rotate(enum rotation_direction direction, int32_t target_ticks)
 
     init_rotate_state(&state, direction);
 
+    memset(&rotate_statistics, 0, sizeof(rotate_statistics));
+
     const uint32_t MAX_STEPS = 10000u;
     uint32_t steps = 0u;
 
@@ -481,11 +513,16 @@ void rotate(enum rotation_direction direction, int32_t target_ticks)
         apply_motor_output(output);
 
         if (++steps > MAX_STEPS) {
+            rotate_statistics.timeout_occurred = true;
             break;
         }
     }
 
     stop_motors();
+
+    rotate_statistics.control_loop_iterations = steps;
+    rotate_statistics.final_encoder_1_ticks = get_encoder_1_ticks();
+    rotate_statistics.final_encoder_2_ticks = get_encoder_2_ticks();
 }
 
 struct rotate_errors calculate_rotate_errors(struct rotate_state *state)

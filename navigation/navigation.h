@@ -161,6 +161,24 @@ struct front_wall_detection_config {
 };
 
 /*----------------------------------------------------------------------------*/
+/* telemetry */
+struct move_forward_statistics {
+    uint32_t control_loop_iterations;
+    int32_t final_encoder_1_ticks;
+    int32_t final_encoder_2_ticks;
+    bool left_wall_present;
+    bool right_wall_present;
+    bool timeout_occurred;
+};
+
+struct rotate_statistics {
+    uint32_t control_loop_iterations;
+    int32_t final_encoder_1_ticks;
+    int32_t final_encoder_2_ticks;
+    bool timeout_occurred;
+};
+
+/*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
 void init_navigation(void);
@@ -238,5 +256,10 @@ bool is_front_wall_present(void);
 
 void set_front_wall_detection_config(struct front_wall_detection_config cfg);
 struct front_wall_detection_config get_front_wall_detection_config(void);
+
+/*----------------------------------------------------------------------------*/
+/* telemetry */
+struct move_forward_statistics get_move_forward_statistics(void);
+struct rotate_statistics get_rotate_statistics(void);
 
 #endif /* NAVIGATION_H_ */

@@ -294,6 +294,24 @@ TEST(NavigationTests, InitNavigationClearsRotateConfig)
     MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
 }
 
+TEST(NavigationTests, InitNavigationClearsMoveForwardStatistics)
+{
+    struct move_forward_statistics stats = get_move_forward_statistics();
+
+    struct move_forward_statistics expected{0};
+
+    MEMCMP_EQUAL(&expected, &stats, sizeof(stats));
+}
+
+TEST(NavigationTests, InitNavigationClearsRotateStatistics)
+{
+    struct rotate_statistics stats = get_rotate_statistics();
+
+    struct rotate_statistics expected{0};
+
+    MEMCMP_EQUAL(&expected, &stats, sizeof(stats));
+}
+
 TEST(NavigationTests, DeinitNavigationClearsNavigationParameters)
 {
     struct mouse_physical_params mouse{create_mouse_physical_params()};
@@ -1399,4 +1417,48 @@ TEST(NavigationTests, WallPresenceFlagsDefaultToFalse)
 {
     CHECK_FALSE(is_left_wall_present());
     CHECK_FALSE(is_right_wall_present());
+}
+
+/*----------------------------------------------------------------------------*/
+/* telemetry */
+TEST(NavigationTests, MoveForwardSetsTimeoutFlagWhenMaxStepsExceeded)
+{
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
+    struct maze_physical_params maze_params{create_maze_physical_params()};
+
+    calculate_mouse_params(mouse_params);
+    calculate_maze_params(maze_params);
+    calculate_navigation_params();
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    mock().ignoreOtherCalls();
+
+    move_forward();
+
+    struct move_forward_statistics stats{get_move_forward_statistics()};
+
+    CHECK(stats.timeout_occurred);
+}
+
+TEST(NavigationTests, RotateSetsTimeoutFlagWhenMaxStepsExceeded)
+{
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
+    struct maze_physical_params maze_params{create_maze_physical_params()};
+
+    calculate_mouse_params(mouse_params);
+    calculate_maze_params(maze_params);
+    calculate_navigation_params();
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    mock().ignoreOtherCalls();
+
+    rotate(ROTATE_CLOCKWISE, 1000);
+
+    struct rotate_statistics stats{get_rotate_statistics()};
+
+    CHECK(stats.timeout_occurred);
 }
