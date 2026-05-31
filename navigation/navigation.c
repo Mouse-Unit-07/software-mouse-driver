@@ -28,6 +28,8 @@
 /*----------------------------------------------------------------------------*/
 static int32_t clamp_int32(int32_t val, int32_t min, int32_t max);
 
+static void calculate_side_wall_params(void);
+
 /*----------------------------------------------------------------------------*/
 /*                               Private Globals                              */
 /*----------------------------------------------------------------------------*/
@@ -41,6 +43,11 @@ static struct move_forward_control_config no_wall_move_forward_control_config = 
 static struct move_forward_control_config one_wall_move_forward_control_config = {0};
 static struct move_forward_control_config both_wall_move_forward_control_config = {0};
 static struct rotate_control_config rotate_control_config = {0};
+static struct side_wall_detection_config side_wall_detection_config = {0};
+static struct side_wall_calculated_params side_wall_calculated_params = {0};
+
+static bool left_wall_present = false;
+static bool right_wall_present = false;
 
 /*----------------------------------------------------------------------------*/
 /*                         Public Function Definitions                        */
@@ -55,8 +62,15 @@ void init_navigation(void)
 
     memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
     memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
-    memset(&both_wall_move_forward_control_config, 0, sizeof(both_wall_move_forward_control_config));
+    memset(&both_wall_move_forward_control_config, 0,
+           sizeof(both_wall_move_forward_control_config));
     memset(&rotate_control_config, 0, sizeof(rotate_control_config));
+
+    memset(&side_wall_detection_config, 0, sizeof(side_wall_detection_config));
+    memset(&side_wall_calculated_params, 0, sizeof(side_wall_calculated_params));
+
+    left_wall_present = false;
+    right_wall_present = false;
 }
 
 void deinit_navigation(void)
@@ -69,8 +83,15 @@ void deinit_navigation(void)
 
     memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
     memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
-    memset(&both_wall_move_forward_control_config, 0, sizeof(both_wall_move_forward_control_config));
+    memset(&both_wall_move_forward_control_config, 0,
+           sizeof(both_wall_move_forward_control_config));
     memset(&rotate_control_config, 0, sizeof(rotate_control_config));
+
+    memset(&side_wall_detection_config, 0, sizeof(side_wall_detection_config));
+    memset(&side_wall_calculated_params, 0, sizeof(side_wall_calculated_params));
+
+    left_wall_present = false;
+    right_wall_present = false;
 }
 
 void calculate_mouse_params(struct mouse_physical_params p)
@@ -107,6 +128,8 @@ void calculate_navigation_params(void)
 
     navigation_params.rotate_180_degree_target_ticks =
         (int32_t)(M_PI * mouse_params.encoder_ticks_per_rotation_radian);
+
+    calculate_side_wall_params();
 }
 
 struct mouse_physical_params get_mouse_physical_params(void)
@@ -168,7 +191,7 @@ struct move_forward_control_config get_both_wall_move_forward_control_config(voi
 
 void move_forward(void)
 {
-    move_forward_with_wall_mode(WALL_FEEDBACK_NONE);
+    move_forward_with_wall_mode(WALL_FEEDBACK_NONE, false);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -196,6 +219,35 @@ void rotate_counter_clockwise_90_deg(void)
 void rotate_180_deg(void)
 {
     rotate(ROTATE_CLOCKWISE, navigation_params.rotate_180_degree_target_ticks);
+}
+
+/*----------------------------------------------------------------------------*/
+/* side-wall detection */
+bool is_left_wall_present(void)
+{
+    return left_wall_present;
+}
+
+bool is_right_wall_present(void)
+{
+    return right_wall_present;
+}
+
+void set_side_wall_detection_config(struct side_wall_detection_config cfg)
+{
+    side_wall_detection_config = cfg;
+
+    calculate_side_wall_params();
+}
+
+struct side_wall_detection_config get_side_wall_detection_config(void)
+{
+    return side_wall_detection_config;
+}
+
+struct side_wall_calculated_params get_side_wall_calculated_params(void)
+{
+    return side_wall_calculated_params;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -243,16 +295,24 @@ void init_move_forward_state(struct move_forward_state *state)
     set_wheel_motor_2_direction_forward();
 }
 
-void move_forward_with_wall_mode(enum wall_feedback_mode mode)
+void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoid_mode_switching)
 {
     struct move_forward_state state = {0};
+    struct side_wall_detector detector = {0};
 
     init_move_forward_state(&state);
+    init_side_wall_detector(&detector);
 
     const uint32_t MAX_STEPS = 10000u;
     uint32_t steps = 0u;
 
     while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks)) {
+        update_side_wall_detector(&detector);
+
+        enum wall_feedback_mode mode = initial_mode;
+        if (!avoid_mode_switching) {
+            mode = determine_wall_mode(&detector);
+        }
         struct move_forward_control_config cfg = {0};
         if (mode == WALL_FEEDBACK_NONE) {
             cfg = no_wall_move_forward_control_config;
@@ -274,6 +334,9 @@ void move_forward_with_wall_mode(enum wall_feedback_mode mode)
     }
 
     stop_motors();
+
+    left_wall_present = determine_wall_presence(&detector, true);
+    right_wall_present = determine_wall_presence(&detector, false);
 }
 
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
@@ -447,4 +510,141 @@ struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
     output.motor_2_speed = (uint8_t)speed_2;
 
     return output;
+}
+
+/*----------------------------------------------------------------------------*/
+/* side-wall detection */
+static void calculate_side_wall_params(void)
+{
+    side_wall_calculated_params.reading_start_offset_ticks =
+        (uint32_t)(side_wall_detection_config.reading_start_offset
+                   * navigation_params.move_forward_one_cell_target_ticks);
+}
+
+void init_side_wall_detector(struct side_wall_detector *detector)
+{
+    memset(detector, 0, sizeof(*detector));
+}
+
+void update_side_wall_detector(struct side_wall_detector *detector)
+{
+    uint32_t current_step =
+        (uint32_t)((abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2);
+    uint32_t start_step = side_wall_calculated_params.reading_start_offset_ticks;
+    uint32_t left_reading = read_ir_2_sensor();
+    uint32_t right_reading = read_ir_3_sensor();
+
+    if ((current_step >= start_step)
+        && (detector->samples_collected < side_wall_detection_config.num_detection_samples)) {
+        detector->left_sum += left_reading;
+        detector->right_sum += right_reading;
+        detector->samples_collected++;
+    }
+
+    if (detector->have_previous_reading) {
+        if (left_reading > detector->prev_left_reading) {
+            if ((left_reading - detector->prev_left_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                if (!detector->left_first_change_recorded) {
+                    detector->left_wall_present_on_first_change = true;
+                    detector->left_first_change_recorded = true;
+                }
+                detector->left_wall_currently_present = true;
+            }
+        } else {
+            if ((detector->prev_left_reading - left_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                if (!detector->left_first_change_recorded) {
+                    detector->left_wall_present_on_first_change = false;
+                    detector->left_first_change_recorded = true;
+                }
+                detector->left_wall_currently_present = false;
+            }
+        }
+        if (right_reading > detector->prev_right_reading) {
+            if ((right_reading - detector->prev_right_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                if (!detector->right_first_change_recorded) {
+                    detector->right_wall_present_on_first_change = true;
+                    detector->right_first_change_recorded = true;
+                }
+                detector->right_wall_currently_present = true;
+            }
+        } else {
+            if ((detector->prev_right_reading - right_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                if (!detector->right_first_change_recorded) {
+                    detector->right_wall_present_on_first_change = false;
+                    detector->right_first_change_recorded = true;
+                }
+                detector->right_wall_currently_present = false;
+            }
+        }
+    }
+
+    detector->have_previous_reading = true;
+    detector->prev_left_reading = left_reading;
+    detector->prev_right_reading = right_reading;
+}
+
+enum wall_feedback_mode determine_wall_mode(const struct side_wall_detector *detector)
+{
+    bool left_wall_currently_present = false;
+    bool right_wall_currently_present = false;
+
+    if (detector->left_first_change_recorded) {
+        left_wall_currently_present = detector->left_wall_currently_present;
+    } else if (detector->samples_collected == 0u) {
+        left_wall_currently_present = false;
+    } else {
+        left_wall_currently_present = (detector->left_sum / detector->samples_collected)
+                                      >= side_wall_detection_config.reading_threshold;
+    }
+
+    if (detector->right_first_change_recorded) {
+        right_wall_currently_present = detector->right_wall_currently_present;
+    } else if (detector->samples_collected == 0u) {
+        right_wall_currently_present = false;
+    } else {
+        right_wall_currently_present = (detector->right_sum / detector->samples_collected)
+                                       >= side_wall_detection_config.reading_threshold;
+    }
+
+    if (left_wall_currently_present && right_wall_currently_present) {
+        return WALL_FEEDBACK_BOTH;
+    } else if (left_wall_currently_present && !right_wall_currently_present) {
+        return WALL_FEEDBACK_LEFT;
+    } else if (!left_wall_currently_present && right_wall_currently_present) {
+        return WALL_FEEDBACK_RIGHT;
+    }
+
+    return WALL_FEEDBACK_NONE;
+}
+
+bool determine_wall_presence(const struct side_wall_detector *detector,
+                             bool left_presence_requested)
+{
+    bool first_change_recorded;
+    bool wall_present;
+    uint64_t sum;
+
+    if (left_presence_requested) {
+        first_change_recorded = detector->left_first_change_recorded;
+        wall_present = detector->left_wall_present_on_first_change;
+        sum = detector->left_sum;
+    } else {
+        first_change_recorded = detector->right_first_change_recorded;
+        wall_present = detector->right_wall_present_on_first_change;
+        sum = detector->right_sum;
+    }
+
+    if (first_change_recorded) {
+        return wall_present;
+    }
+
+    if (detector->samples_collected == 0) {
+        return false;
+    }
+
+    return (sum / detector->samples_collected) >= side_wall_detection_config.reading_threshold;
 }

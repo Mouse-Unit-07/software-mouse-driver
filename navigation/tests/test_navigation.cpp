@@ -168,6 +168,27 @@ void set_rotation_control_config(void)
     set_rotate_control_config(create_default_rotate_control_config());
 }
 
+struct maze_physical_params create_maze_physical_params(void)
+{
+    struct maze_physical_params params{0};
+    params.post_size_mm = 168.0;
+    params.wall_size_mm = 12.0;
+
+    return params;
+}
+
+struct mouse_physical_params create_mouse_physical_params(void)
+{
+    struct mouse_physical_params params{0};
+    params.wheel_diameter_mm = 32.0;
+    params.wheel_base_mm = 90.0;
+    params.encoder_events_per_revolution = 60.0;
+    params.motor_pinion_gear_teeth = 13.0;
+    params.wheel_gear_teeth = 44.0;
+
+    return params;
+}
+
 /*============================================================================*/
 /*                                 Test Group                                 */
 /*============================================================================*/
@@ -196,16 +217,8 @@ TEST_GROUP(NavigationTests)
 /*============================================================================*/
 TEST(NavigationTests, InitNavigationClearsNavigationParameters)
 {
-    struct mouse_physical_params mouse{};
-    mouse.wheel_diameter_mm = 32.0;
-    mouse.wheel_base_mm = 90.0;
-    mouse.encoder_events_per_revolution = 60.0;
-    mouse.motor_pinion_gear_teeth = 13.0;
-    mouse.wheel_gear_teeth = 44.0;
-
-    struct maze_physical_params maze{};
-    maze.post_size_mm = 168.0;
-    maze.wall_size_mm = 12.0;
+    struct mouse_physical_params mouse{create_mouse_physical_params()};
+    struct maze_physical_params maze{create_maze_physical_params()};
 
     calculate_mouse_params(mouse);
     calculate_maze_params(maze);
@@ -269,16 +282,8 @@ TEST(NavigationTests, InitNavigationClearsRotateConfig)
 
 TEST(NavigationTests, DeinitNavigationClearsNavigationParameters)
 {
-    struct mouse_physical_params mouse{};
-    mouse.wheel_diameter_mm = 32.0;
-    mouse.wheel_base_mm = 90.0;
-    mouse.encoder_events_per_revolution = 60.0;
-    mouse.motor_pinion_gear_teeth = 13.0;
-    mouse.wheel_gear_teeth = 44.0;
-
-    struct maze_physical_params maze{};
-    maze.post_size_mm = 168.0;
-    maze.wall_size_mm = 12.0;
+    struct mouse_physical_params mouse{create_mouse_physical_params()};
+    struct maze_physical_params maze{create_maze_physical_params()};
 
     calculate_mouse_params(mouse);
     calculate_maze_params(maze);
@@ -342,13 +347,7 @@ TEST(NavigationTests, DeinitNavigationClearsRotateConfig)
 
 TEST(NavigationTests, CalculateMouseParamsStoresPhysicalParameters)
 {
-    struct mouse_physical_params expected{};
-    expected.wheel_diameter_mm = 32.0;
-    expected.wheel_base_mm = 90.0;
-    expected.max_motor_rpm = 1000.0;
-    expected.encoder_events_per_revolution = 60.0;
-    expected.motor_pinion_gear_teeth = 13.0;
-    expected.wheel_gear_teeth = 44.0;
+    struct mouse_physical_params expected{create_mouse_physical_params()};
 
     calculate_mouse_params(expected);
 
@@ -359,9 +358,7 @@ TEST(NavigationTests, CalculateMouseParamsStoresPhysicalParameters)
 
 TEST(NavigationTests, CalculateMazeParamsStoresPhysicalParameters)
 {
-    struct maze_physical_params expected{};
-    expected.post_size_mm = 168.0;
-    expected.wall_size_mm = 12.0;
+    struct maze_physical_params expected{create_maze_physical_params()};
 
     calculate_maze_params(expected);
 
@@ -372,12 +369,7 @@ TEST(NavigationTests, CalculateMazeParamsStoresPhysicalParameters)
 
 TEST(NavigationTests, CalculateMouseParamsCalculatesDerivedParameters)
 {
-    struct mouse_physical_params p{};
-    p.wheel_diameter_mm = 32.0;
-    p.wheel_base_mm = 90.0;
-    p.encoder_events_per_revolution = 60.0;
-    p.motor_pinion_gear_teeth = 13.0;
-    p.wheel_gear_teeth = 44.0;
+    struct mouse_physical_params p{create_mouse_physical_params()};
 
     calculate_mouse_params(p);
 
@@ -388,9 +380,7 @@ TEST(NavigationTests, CalculateMouseParamsCalculatesDerivedParameters)
 
 TEST(NavigationTests, CalculateMazeParamsCalculatesCellSize)
 {
-    struct maze_physical_params p{};
-    p.post_size_mm = 168.0;
-    p.wall_size_mm = 12.0;
+    struct maze_physical_params p{create_maze_physical_params()};
 
     calculate_maze_params(p);
 
@@ -401,16 +391,8 @@ TEST(NavigationTests, CalculateMazeParamsCalculatesCellSize)
 
 TEST(NavigationTests, CalculateNavigationParamsCalculatesTargets)
 {
-    struct mouse_physical_params mouse{};
-    mouse.wheel_diameter_mm = 32.0;
-    mouse.wheel_base_mm = 90.0;
-    mouse.encoder_events_per_revolution = 60.0;
-    mouse.motor_pinion_gear_teeth = 13.0;
-    mouse.wheel_gear_teeth = 44.0;
-
-    struct maze_physical_params maze{};
-    maze.post_size_mm = 168.0;
-    maze.wall_size_mm = 12.0;
+    struct mouse_physical_params mouse{create_mouse_physical_params()};
+    struct maze_physical_params maze{create_maze_physical_params()};
 
     calculate_mouse_params(mouse);
     calculate_maze_params(maze);
@@ -694,16 +676,8 @@ TEST(NavigationTests, CalculateMoveForwardMotorOutputClampsMinimum)
 
 TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
 {
-    struct mouse_physical_params mouse_params{};
-    mouse_params.wheel_diameter_mm = 32.0;
-    mouse_params.wheel_base_mm = 90.0;
-    mouse_params.encoder_events_per_revolution = 60.0;
-    mouse_params.motor_pinion_gear_teeth = 13.0;
-    mouse_params.wheel_gear_teeth = 44.0;
-
-    struct maze_physical_params maze_params{};
-    maze_params.post_size_mm = 168.0;
-    maze_params.wall_size_mm = 12.0;
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
+    struct maze_physical_params maze_params{create_maze_physical_params()};
 
     calculate_mouse_params(mouse_params);
     calculate_maze_params(maze_params);
@@ -939,12 +913,7 @@ TEST(NavigationTests, RotateStopsMotorsWhenMaxStepsExceeded)
 
 TEST(NavigationTests, RotateClockwise90DegInitializesClockwiseRotation)
 {
-    struct mouse_physical_params mouse_params{};
-    mouse_params.wheel_diameter_mm = 32.0;
-    mouse_params.wheel_base_mm = 90.0;
-    mouse_params.encoder_events_per_revolution = 60.0;
-    mouse_params.motor_pinion_gear_teeth = 13.0;
-    mouse_params.wheel_gear_teeth = 44.0;
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
 
     calculate_mouse_params(mouse_params);
     calculate_navigation_params();
@@ -965,12 +934,7 @@ TEST(NavigationTests, RotateClockwise90DegInitializesClockwiseRotation)
 
 TEST(NavigationTests, RotateCounterClockwise90DegInitializesCounterClockwiseRotation)
 {
-    struct mouse_physical_params mouse_params{};
-    mouse_params.wheel_diameter_mm = 32.0;
-    mouse_params.wheel_base_mm = 90.0;
-    mouse_params.encoder_events_per_revolution = 60.0;
-    mouse_params.motor_pinion_gear_teeth = 13.0;
-    mouse_params.wheel_gear_teeth = 44.0;
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
 
     calculate_mouse_params(mouse_params);
     calculate_navigation_params();
@@ -991,12 +955,7 @@ TEST(NavigationTests, RotateCounterClockwise90DegInitializesCounterClockwiseRota
 
 TEST(NavigationTests, Rotate180DegInitializesClockwiseRotation)
 {
-    struct mouse_physical_params mouse_params{};
-    mouse_params.wheel_diameter_mm = 32.0;
-    mouse_params.wheel_base_mm = 90.0;
-    mouse_params.encoder_events_per_revolution = 60.0;
-    mouse_params.motor_pinion_gear_teeth = 13.0;
-    mouse_params.wheel_gear_teeth = 44.0;
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
 
     calculate_mouse_params(mouse_params);
     calculate_navigation_params();
@@ -1013,4 +972,309 @@ TEST(NavigationTests, Rotate180DegInitializesClockwiseRotation)
     mock().ignoreOtherCalls();
 
     rotate_180_deg();
+}
+
+/*----------------------------------------------------------------------------*/
+/* side-wall detection */
+TEST(NavigationTests, InitSideWallDetectorClearsDetector)
+{
+    struct side_wall_detector detector{};
+
+    detector.have_previous_reading = true;
+    detector.prev_left_reading = 123;
+    detector.prev_right_reading = 456;
+    detector.left_first_change_recorded = true;
+    detector.right_first_change_recorded = true;
+    detector.left_wall_present_on_first_change = true;
+    detector.right_wall_present_on_first_change = true;
+    detector.left_wall_currently_present = true;
+    detector.right_wall_currently_present = true;
+    detector.left_sum = 100;
+    detector.right_sum = 200;
+    detector.samples_collected = 5;
+
+    init_side_wall_detector(&detector);
+
+    struct side_wall_detector expected{0};
+
+    MEMCMP_EQUAL(&expected, &detector, sizeof(detector));
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorDoesNotCollectSamplesBeforeOffset)
+{
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
+    struct maze_physical_params maze_params{create_maze_physical_params()};
+    calculate_mouse_params(mouse_params);
+    calculate_maze_params(maze_params);
+    calculate_navigation_params();
+
+    struct side_wall_detection_config cfg{};
+    cfg.num_detection_samples = 10;
+    cfg.slope_threshold = 100;
+    cfg.reading_start_offset = 0.5;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+    fake_ir_2_reading_value = 400;
+    fake_ir_3_reading_value = 500;
+
+    struct side_wall_detector detector{};
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.samples_collected == 0u);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorCollectsSamplesAfterOffset)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.num_detection_samples = 10;
+    cfg.reading_start_offset = 0.0;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_2_reading_value = 400;
+    fake_ir_3_reading_value = 500;
+
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.samples_collected == 1u);
+    CHECK(detector.left_sum == 400u);
+    CHECK(detector.right_sum == 500u);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorStopsCollectingAfterMaximumSamples)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.num_detection_samples = 2;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_2_reading_value = 100;
+    fake_ir_3_reading_value = 200;
+
+    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.samples_collected == 2u);
+    CHECK(detector.left_sum == 200u);
+    CHECK(detector.right_sum == 400u);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_2_reading_value = 500;
+    fake_ir_3_reading_value = 600;
+
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.have_previous_reading);
+
+    CHECK_FALSE(detector.left_first_change_recorded);
+    CHECK_FALSE(detector.right_first_change_recorded);
+
+    CHECK(detector.prev_left_reading == 500u);
+    CHECK(detector.prev_right_reading == 600u);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_2_reading_value = 100;
+    update_side_wall_detector(&detector);
+
+    fake_ir_2_reading_value = 200;
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.left_first_change_recorded);
+    CHECK(detector.left_wall_present_on_first_change);
+    CHECK(detector.left_wall_currently_present);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_3_reading_value = 100;
+    update_side_wall_detector(&detector);
+
+    fake_ir_3_reading_value = 200;
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.right_first_change_recorded);
+    CHECK(detector.right_wall_present_on_first_change);
+    CHECK(detector.right_wall_currently_present);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_2_reading_value = 300;
+    update_side_wall_detector(&detector);
+
+    fake_ir_2_reading_value = 100;
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.left_first_change_recorded);
+    CHECK_FALSE(detector.left_wall_present_on_first_change);
+    CHECK_FALSE(detector.left_wall_currently_present);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_3_reading_value = 300;
+    update_side_wall_detector(&detector);
+
+    fake_ir_3_reading_value = 100;
+    update_side_wall_detector(&detector);
+
+    CHECK(detector.right_first_change_recorded);
+    CHECK_FALSE(detector.right_wall_present_on_first_change);
+    CHECK_FALSE(detector.right_wall_currently_present);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorIgnoresChangesBelowSlopeThreshold)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 100;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_ir_2_reading_value = 500;
+    update_side_wall_detector(&detector);
+
+    fake_ir_2_reading_value = 550;
+    update_side_wall_detector(&detector);
+
+    CHECK_FALSE(detector.left_first_change_recorded);
+}
+
+TEST(NavigationTests, DetermineWallModeUsesAverageWhenNoTransitionRecorded)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
+
+    set_side_wall_detection_config(cfg);
+
+    detector.left_sum = 600;
+    detector.right_sum = 200;
+    detector.samples_collected = 1;
+
+    CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_LEFT);
+}
+
+TEST(NavigationTests, DetermineWallModeReturnsBothWallsFromAverages)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
+
+    set_side_wall_detection_config(cfg);
+
+    detector.left_sum = 700;
+    detector.right_sum = 800;
+    detector.samples_collected = 1;
+
+    CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_BOTH);
+}
+
+TEST(NavigationTests, DetermineWallModeUsesCurrentWallStateAfterTransition)
+{
+    struct side_wall_detector detector{};
+
+    detector.left_first_change_recorded = true;
+    detector.left_wall_currently_present = true;
+
+    detector.right_first_change_recorded = true;
+    detector.right_wall_currently_present = false;
+
+    CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_LEFT);
+}
+
+TEST(NavigationTests, DetermineWallPresenceReturnsWallStateAtFirstTransition)
+{
+    struct side_wall_detector detector{};
+
+    detector.left_first_change_recorded = true;
+    detector.left_wall_present_on_first_change = true;
+
+    detector.left_wall_currently_present = false;
+
+    CHECK(determine_wall_presence(&detector, true));
+}
+
+TEST(NavigationTests, DetermineWallPresenceReturnsNoWallStateAtFirstTransition)
+{
+    struct side_wall_detector detector{};
+
+    detector.left_first_change_recorded = true;
+    detector.left_wall_present_on_first_change = false;
+
+    detector.left_wall_currently_present = true;
+
+    CHECK_FALSE(determine_wall_presence(&detector, true));
+}
+
+TEST(NavigationTests, DetermineWallPresenceUsesAverageWhenNoTransitionRecorded)
+{
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
+
+    set_side_wall_detection_config(cfg);
+
+    detector.left_sum = 600;
+    detector.samples_collected = 1;
+
+    CHECK(determine_wall_presence(&detector, true));
+}
+
+TEST(NavigationTests, DetermineWallPresenceReturnsFalseWhenNoSamplesCollected)
+{
+    struct side_wall_detector detector{};
+
+    CHECK_FALSE(determine_wall_presence(&detector, true));
 }

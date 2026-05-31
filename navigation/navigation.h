@@ -124,6 +124,36 @@ struct rotate_errors {
 };
 
 /*----------------------------------------------------------------------------*/
+/* side-wall detection */
+struct side_wall_detection_config {
+    uint32_t reading_threshold;
+    uint32_t slope_threshold;
+    uint32_t num_detection_samples;
+    double reading_start_offset;
+};
+
+struct side_wall_calculated_params {
+    uint32_t reading_start_offset_ticks;
+};
+
+/* helper structs exposed for testing */
+struct side_wall_detector {
+    bool have_previous_reading;
+    uint32_t prev_left_reading;
+    uint32_t prev_right_reading;
+    bool left_first_change_recorded;
+    bool right_first_change_recorded;
+    bool left_wall_present_on_first_change;
+    bool right_wall_present_on_first_change;
+    bool left_wall_currently_present;
+    bool right_wall_currently_present;
+
+    uint64_t left_sum;
+    uint64_t right_sum;
+    uint32_t samples_collected;
+};
+
+/*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
 void init_navigation(void);
@@ -136,7 +166,6 @@ struct mouse_calculated_params get_mouse_calculated_params(void);
 struct maze_physical_params get_maze_physical_params(void);
 struct maze_calculated_params get_maze_calculated_params(void);
 struct navigation_params get_navigation_params(void);
-
 
 /* helpers exposed for testing */
 bool is_tick_average_at_target(int32_t target_ticks);
@@ -156,7 +185,7 @@ struct move_forward_control_config get_both_wall_move_forward_control_config(voi
 
 /* helpers exposed for testing */
 void init_move_forward_state(struct move_forward_state *state);
-void move_forward_with_wall_mode(enum wall_feedback_mode mode);
+void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoid_mode_switching);
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
                                                          enum wall_feedback_mode wall_mode,
                                                          uint32_t wall_target);
@@ -179,5 +208,21 @@ struct rotate_errors calculate_rotate_errors(struct rotate_state *state);
 struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
                                                   enum rotation_direction direction,
                                                   struct rotate_control_config cfg);
+
+/*----------------------------------------------------------------------------*/
+/* side-wall detection */
+bool is_left_wall_present(void);
+bool is_right_wall_present(void);
+
+void set_side_wall_detection_config(struct side_wall_detection_config cfg);
+struct side_wall_detection_config get_side_wall_detection_config(void);
+struct side_wall_calculated_params get_side_wall_calculated_params(void);
+
+/* helpers exposed for testing */
+void init_side_wall_detector(struct side_wall_detector *detector);
+void update_side_wall_detector(struct side_wall_detector *detector);
+enum wall_feedback_mode determine_wall_mode(const struct side_wall_detector *detector);
+bool determine_wall_presence(const struct side_wall_detector *detector,
+                             bool left_presence_requested);
 
 #endif /* NAVIGATION_H_ */
