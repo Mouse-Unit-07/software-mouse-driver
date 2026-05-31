@@ -154,6 +154,13 @@ struct side_wall_detector {
 };
 
 /*----------------------------------------------------------------------------*/
+/* front-wall detection */
+struct front_wall_detection_config {
+    uint32_t reading_threshold;
+    uint32_t num_detection_samples;
+};
+
+/*----------------------------------------------------------------------------*/
 /*                         Public Function Prototypes                         */
 /*----------------------------------------------------------------------------*/
 void init_navigation(void);
@@ -224,5 +231,12 @@ void update_side_wall_detector(struct side_wall_detector *detector);
 enum wall_feedback_mode determine_wall_mode(const struct side_wall_detector *detector);
 bool determine_wall_presence(const struct side_wall_detector *detector,
                              bool left_presence_requested);
+
+/*----------------------------------------------------------------------------*/
+/* front-wall detection */
+bool is_front_wall_present(void);
+
+void set_front_wall_detection_config(struct front_wall_detection_config cfg);
+struct front_wall_detection_config get_front_wall_detection_config(void);
 
 #endif /* NAVIGATION_H_ */

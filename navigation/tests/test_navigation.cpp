@@ -28,8 +28,15 @@ extern "C"
 
 /* ---------------------------------------------------------------------------*/
 /* infrared sensor mocks and fakes */
+uint32_t fake_ir_1_reading_value{0u};
 uint32_t fake_ir_2_reading_value{0u};
 uint32_t fake_ir_3_reading_value{0u};
+uint32_t fake_ir_4_reading_value{0u};
+
+uint32_t read_ir_1_sensor(void)
+{
+    return fake_ir_1_reading_value;
+}
 
 uint32_t read_ir_2_sensor(void)
 {
@@ -41,10 +48,17 @@ uint32_t read_ir_3_sensor(void)
     return fake_ir_3_reading_value;
 }
 
+uint32_t read_ir_4_sensor(void)
+{
+    return fake_ir_4_reading_value;
+}
+
 void reset_ir_mocks(void)
 {
+    fake_ir_1_reading_value = 0u;
     fake_ir_2_reading_value = 0u;
     fake_ir_3_reading_value = 0u;
+    fake_ir_4_reading_value = 0u;
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -1000,6 +1014,38 @@ TEST(NavigationTests, InitSideWallDetectorClearsDetector)
     MEMCMP_EQUAL(&expected, &detector, sizeof(detector));
 }
 
+TEST(NavigationTests, SetSideWallDetectionConfigStoresConfiguration)
+{
+    struct side_wall_detection_config expected{};
+    expected.num_detection_samples = 10;
+    expected.reading_threshold = 500;
+    expected.slope_threshold = 50;
+    expected.reading_start_offset = 0.25;
+
+    set_side_wall_detection_config(expected);
+
+    struct side_wall_detection_config actual = get_side_wall_detection_config();
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
+}
+
+TEST(NavigationTests, SetSideWallDetectionConfigCalculatesReadingStartOffsetTicks)
+{
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
+    struct side_wall_detection_config cfg{};
+
+    cfg.reading_start_offset = 0.5;
+
+    set_side_wall_detection_config(cfg);
+
+    struct side_wall_calculated_params params = get_side_wall_calculated_params();
+
+    CHECK(params.reading_start_offset_ticks == 45u);
+}
+
 TEST(NavigationTests, UpdateSideWallDetectorDoesNotCollectSamplesBeforeOffset)
 {
     struct mouse_physical_params mouse_params{create_mouse_physical_params()};
@@ -1277,4 +1323,80 @@ TEST(NavigationTests, DetermineWallPresenceReturnsFalseWhenNoSamplesCollected)
     struct side_wall_detector detector{};
 
     CHECK_FALSE(determine_wall_presence(&detector, true));
+}
+
+/*----------------------------------------------------------------------------*/
+/* front-wall detection */
+TEST(NavigationTests, SetFrontWallDetectionConfigStoresConfiguration)
+{
+    struct front_wall_detection_config expected{};
+
+    expected.num_detection_samples = 8;
+    expected.reading_threshold = 500;
+
+    set_front_wall_detection_config(expected);
+
+    struct front_wall_detection_config actual = get_front_wall_detection_config();
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
+}
+
+TEST(NavigationTests, IsFrontWallPresentReturnsFalseWhenZeroSamplesRequested)
+{
+    struct front_wall_detection_config cfg{};
+
+    cfg.num_detection_samples = 0;
+    cfg.reading_threshold = 500;
+
+    set_front_wall_detection_config(cfg);
+
+    CHECK_FALSE(is_front_wall_present());
+}
+
+TEST(NavigationTests, IsFrontWallPresentReturnsTrueWhenAverageExceedsThreshold)
+{
+    struct front_wall_detection_config cfg{};
+    cfg.num_detection_samples = 4;
+    cfg.reading_threshold = 500;
+
+    set_front_wall_detection_config(cfg);
+
+    fake_ir_1_reading_value = 600;
+    fake_ir_4_reading_value = 700;
+
+    CHECK(is_front_wall_present());
+}
+
+TEST(NavigationTests, IsFrontWallPresentReturnsFalseWhenAverageBelowThreshold)
+{
+    struct front_wall_detection_config cfg{};
+    cfg.num_detection_samples = 4;
+    cfg.reading_threshold = 500;
+
+    set_front_wall_detection_config(cfg);
+
+    fake_ir_1_reading_value = 300;
+    fake_ir_4_reading_value = 400;
+
+    CHECK_FALSE(is_front_wall_present());
+}
+
+TEST(NavigationTests, IsFrontWallPresentReturnsTrueWhenAtThreshold)
+{
+    struct front_wall_detection_config cfg{};
+    cfg.num_detection_samples = 4;
+    cfg.reading_threshold = 500;
+
+    set_front_wall_detection_config(cfg);
+
+    fake_ir_1_reading_value = 500;
+    fake_ir_4_reading_value = 500;
+
+    CHECK(is_front_wall_present());
+}
+
+TEST(NavigationTests, WallPresenceFlagsDefaultToFalse)
+{
+    CHECK_FALSE(is_left_wall_present());
+    CHECK_FALSE(is_right_wall_present());
 }

@@ -45,6 +45,7 @@ static struct move_forward_control_config both_wall_move_forward_control_config 
 static struct rotate_control_config rotate_control_config = {0};
 static struct side_wall_detection_config side_wall_detection_config = {0};
 static struct side_wall_calculated_params side_wall_calculated_params = {0};
+static struct front_wall_detection_config front_wall_detection_config = {0};
 
 static bool left_wall_present = false;
 static bool right_wall_present = false;
@@ -69,6 +70,8 @@ void init_navigation(void)
     memset(&side_wall_detection_config, 0, sizeof(side_wall_detection_config));
     memset(&side_wall_calculated_params, 0, sizeof(side_wall_calculated_params));
 
+    memset(&front_wall_detection_config, 0, sizeof(front_wall_detection_config));
+
     left_wall_present = false;
     right_wall_present = false;
 }
@@ -89,6 +92,8 @@ void deinit_navigation(void)
 
     memset(&side_wall_detection_config, 0, sizeof(side_wall_detection_config));
     memset(&side_wall_calculated_params, 0, sizeof(side_wall_calculated_params));
+
+    memset(&front_wall_detection_config, 0, sizeof(front_wall_detection_config));
 
     left_wall_present = false;
     right_wall_present = false;
@@ -248,6 +253,36 @@ struct side_wall_detection_config get_side_wall_detection_config(void)
 struct side_wall_calculated_params get_side_wall_calculated_params(void)
 {
     return side_wall_calculated_params;
+}
+
+/*----------------------------------------------------------------------------*/
+/* front-wall detection */
+bool is_front_wall_present(void)
+{
+    uint64_t sum = 0u;
+
+    for (uint32_t i = 0u; i < front_wall_detection_config.num_detection_samples; i++) {
+        sum += read_ir_1_sensor();
+        sum += read_ir_4_sensor();
+    }
+
+    if (front_wall_detection_config.num_detection_samples == 0u) {
+        return false;
+    }
+
+    uint32_t average = (uint32_t)(sum / (front_wall_detection_config.num_detection_samples * 2u));
+
+    return average >= front_wall_detection_config.reading_threshold;
+}
+
+void set_front_wall_detection_config(struct front_wall_detection_config cfg)
+{
+    front_wall_detection_config = cfg;
+}
+
+struct front_wall_detection_config get_front_wall_detection_config(void)
+{
+    return front_wall_detection_config;
 }
 
 /*----------------------------------------------------------------------------*/
