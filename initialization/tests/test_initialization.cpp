@@ -115,6 +115,16 @@ void deinit_vacuum(void)
     mock().actualCall("deinit_vacuum");
 }
 
+void enable_power(void)
+{
+    mock().actualCall("enable_power");
+}
+
+void disable_power(void)
+{
+    mock().actualCall("disable_power");
+}
+
 }
 
 /*============================================================================*/
@@ -153,11 +163,16 @@ TEST(InitializationTests, InitCallsFunctions)
     mock().expectOneCall("init_magnetic_encoders");
     mock().expectOneCall("init_wheel_motors");
     mock().expectOneCall("init_vacuum");
+
+    mock().expectOneCall("enable_power");
+
     init_mouse();
 }
 
 TEST(InitializationTests, DeinitCallsFunctions)
 {
+    mock().expectOneCall("disable_power");
+
     mock().expectOneCall("deinit_vacuum");
     mock().expectOneCall("deinit_wheel_motors");
     mock().expectOneCall("deinit_magnetic_encoders");
