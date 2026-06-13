@@ -120,8 +120,8 @@ void processor_test(void)
 
 void battery_comparator_test(void)
 {
-    enable_power();
-    printf("power enabled\r\n");
+    disable_power();
+    printf("power disabled\r\n");
     if (is_battery_low()) {
         printf("Battery is low\r\n");
     } else {
@@ -129,8 +129,8 @@ void battery_comparator_test(void)
     }
     delay_ms(2000);
 
-    disable_power();
-    printf("power disabled\r\n");
+    enable_power();
+    printf("power enabled\r\n");
     if (is_battery_low()) {
         printf("Battery is low\r\n");
     } else {
@@ -141,11 +141,11 @@ void battery_comparator_test(void)
 
 void power_enabler_test(void)
 {
-    enable_power();
-    printf("power enabled\r\n");
-    delay_ms(10000);
     disable_power();
     printf("power disabled\r\n");
+    delay_ms(10000);
+    enable_power();
+    printf("power enabled\r\n");
     delay_ms(10000);
 }
 
@@ -175,7 +175,6 @@ void pushbutton_test(void)
 
 void infrared_sensors_distance_test(struct ir_distance_test_config cfg)
 {
-    enable_power();
     start_timer();
 
     printf("reading for %" PRIu32 " seconds per trial\r\n", cfg.time_per_trial_ms / 1000u);
@@ -194,13 +193,10 @@ void infrared_sensors_distance_test(struct ir_distance_test_config cfg)
         }
         printf("\r\n");
     }
-
-    disable_power();
 }
 
 void infrared_sensors_free_reading_test(struct ir_free_reading_test_config cfg)
 {
-    enable_power();
     start_timer();
 
     printf("reading for %" PRIu32 " seconds per sensor\r\n", cfg.time_per_sensor_ms / 1000);
@@ -217,13 +213,10 @@ void infrared_sensors_free_reading_test(struct ir_free_reading_test_config cfg)
         }
         printf("\r\n");
     }
-
-    disable_power();
 }
 
 void infrared_sensors_read_speed_test(uint32_t time_per_sensor_ms)
 {
-    enable_power();
     start_timer();
 
     printf("reading for %" PRIu32 " seconds per sensor\r\n", time_per_sensor_ms / 1000);
@@ -240,13 +233,10 @@ void infrared_sensors_read_speed_test(uint32_t time_per_sensor_ms)
         }
         printf("total read: %" PRIu32 "\r\n", read_count);
     }
-
-    disable_power();
 }
 
 void wheel_motor_and_encoder_test(struct wheel_motor_and_encoder_test_config cfg)
 {
-    enable_power();
     start_timer();
 
     printf("encoder target for each run: %" PRId32 "\r\n", cfg.encoder_target);
@@ -260,13 +250,10 @@ void wheel_motor_and_encoder_test(struct wheel_motor_and_encoder_test_config cfg
     for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
         run_motor_test_sweep(&wheel_motor_and_encoders[i], cfg, false);
     }
-
-    disable_power();
 }
 
 void wheel_motor_deceleration_test(struct wheel_motor_deceleration_test_config cfg)
 {
-    enable_power();
     start_timer();
 
     printf("encoder target for each run: %" PRId32 "\r\n", cfg.encoder_target);
@@ -280,21 +267,15 @@ void wheel_motor_deceleration_test(struct wheel_motor_deceleration_test_config c
     for (uint32_t i = 0u; i < wheel_motor_and_encoder_count; i++) {
         run_motor_deceleration_test_sweep(&wheel_motor_and_encoders[i], cfg, false);
     }
-
-    disable_power();
 }
 
 void vacuum_test(void)
 {
-    enable_power();
-
     for (uint8_t motor_speed = 0u; motor_speed < 255; motor_speed++) {
         set_vacuum_speed(motor_speed);
         printf("speed: %" PRIu8 "\r\n", motor_speed);
         delay_ms(2000);
     }
-
-    disable_power();
 }
 
 /*----------------------------------------------------------------------------*/

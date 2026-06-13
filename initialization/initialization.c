@@ -44,10 +44,14 @@ void init_mouse(void)
     init_magnetic_encoders();
     init_wheel_motors();
     init_vacuum();
+
+    enable_power();
 }
 
 void deinit_mouse(void)
 {
+    disable_power();
+
     deinit_vacuum();
     deinit_wheel_motors();
     deinit_magnetic_encoders();

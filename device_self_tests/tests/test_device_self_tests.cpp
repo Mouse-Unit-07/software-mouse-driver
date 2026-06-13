@@ -298,13 +298,13 @@ TEST(DeviceSelfTestsTests, ProcessorTestCallsFunctions)
 
 TEST(DeviceSelfTestsTests, BatteryComparatorTestCallsFunctions)
 {
-    mock().expectOneCall("enable_power");
+    mock().expectOneCall("disable_power");
     mock().expectOneCall("is_battery_low")
         .andReturnValue(false);
     mock().expectOneCall("delay_ms")
         .withUnsignedIntParameter("delay_time", 2000);
 
-    mock().expectOneCall("disable_power");
+    mock().expectOneCall("enable_power");
     mock().expectOneCall("is_battery_low")
         .andReturnValue(false);
     mock().expectOneCall("delay_ms")
@@ -315,11 +315,11 @@ TEST(DeviceSelfTestsTests, BatteryComparatorTestCallsFunctions)
 
 TEST(DeviceSelfTestsTests, PowerEnablerTestCallsFunctions)
 {
-    mock().expectOneCall("enable_power");
+    mock().expectOneCall("disable_power");
     mock().expectOneCall("delay_ms")
         .withUnsignedIntParameter("delay_time", 10000);
 
-    mock().expectOneCall("disable_power");
+    mock().expectOneCall("enable_power");
     mock().expectOneCall("delay_ms")
         .withUnsignedIntParameter("delay_time", 10000);
 
@@ -395,7 +395,6 @@ TEST(DeviceSelfTestsTests, IrSensorsDistanceTestCallsFunctions)
     constexpr uint32_t SENSOR_COUNT{4u};
     constexpr uint32_t DISTANCE_COUNT{2u};
 
-    mock().expectOneCall("enable_power");
     mock().expectOneCall("start_timer");
 
     for (uint32_t i{0u}; i < (SENSOR_COUNT * DISTANCE_COUNT); i++) {
@@ -410,8 +409,6 @@ TEST(DeviceSelfTestsTests, IrSensorsDistanceTestCallsFunctions)
         mock().expectOneCall("get_current_time_ms")
             .andReturnValue(10);
     }
-
-    mock().expectOneCall("disable_power");
 
     infrared_sensors_distance_test(cfg);
 
@@ -429,7 +426,6 @@ TEST(DeviceSelfTestsTests, IrSensorsFreeReadingTestCallsFunctions)
 
     constexpr uint32_t SENSOR_COUNT{4u};
 
-    mock().expectOneCall("enable_power");
     mock().expectOneCall("start_timer");
 
     for (uint32_t s{0u}; s < SENSOR_COUNT; s++) {
@@ -447,8 +443,6 @@ TEST(DeviceSelfTestsTests, IrSensorsFreeReadingTestCallsFunctions)
             .andReturnValue(cfg.time_per_sensor_ms);
     }
 
-    mock().expectOneCall("disable_power");
-
     infrared_sensors_free_reading_test(cfg);
 
     CHECK(read_ir_1_sensor_call_count > 0);
@@ -462,7 +456,6 @@ TEST(DeviceSelfTestsTests, IrSensorsReadSpeedTestCallsFunctions)
     constexpr uint32_t SENSOR_COUNT{4u};
     constexpr uint32_t TIME_PER_SENSOR_MS{10u};
 
-    mock().expectOneCall("enable_power");
     mock().expectOneCall("start_timer");
 
     for (uint32_t s{0u}; s < SENSOR_COUNT; s++) {
@@ -476,8 +469,6 @@ TEST(DeviceSelfTestsTests, IrSensorsReadSpeedTestCallsFunctions)
         mock().expectOneCall("get_current_time_ms")
             .andReturnValue(TIME_PER_SENSOR_MS);
     }
-
-    mock().expectOneCall("disable_power");
 
     infrared_sensors_read_speed_test(TIME_PER_SENSOR_MS);
 
@@ -562,7 +553,6 @@ TEST(DeviceSelfTestsTests, WheelMotorAndEncoderTestCallsFunctions)
     cfg.end_speed = 150u;
     cfg.speed_step = 2u;
 
-    mock().expectOneCall("enable_power");
     mock().expectOneCall("start_timer");
 
     mock().expectOneCall("set_wheel_motor_1_direction_forward");
@@ -576,8 +566,6 @@ TEST(DeviceSelfTestsTests, WheelMotorAndEncoderTestCallsFunctions)
 
     mock().expectOneCall("set_wheel_motor_2_direction_backward");
     mock().expectNCalls(((cfg.end_speed - cfg.start_speed) / cfg.speed_step) + 1, "reset_timer");
-
-    mock().expectOneCall("disable_power");
 
     mock().ignoreOtherCalls();
     wheel_motor_and_encoder_test(cfg);
@@ -680,7 +668,6 @@ TEST(DeviceSelfTestsTests, WheelMotorDecelerationTestCallsFunctions)
 
     const uint32_t RATIO_COUNT{cfg.max_accel_decel_percent + 1u};
 
-    mock().expectOneCall("enable_power");
     mock().expectOneCall("start_timer");
 
     mock().expectOneCall(
@@ -699,8 +686,6 @@ TEST(DeviceSelfTestsTests, WheelMotorDecelerationTestCallsFunctions)
         "set_wheel_motor_2_direction_backward");
     mock().expectNCalls(RATIO_COUNT, "reset_timer");
 
-    mock().expectOneCall("disable_power");
-
     mock().ignoreOtherCalls();
 
     wheel_motor_deceleration_test(cfg);
@@ -708,13 +693,11 @@ TEST(DeviceSelfTestsTests, WheelMotorDecelerationTestCallsFunctions)
 
 TEST(DeviceSelfTestsTests, VacuumTestCallsFunctions)
 {
-    mock().expectOneCall("enable_power");
     for (uint8_t motor_speed = 0u; motor_speed < 255; motor_speed++) {
         mock().expectOneCall("set_vacuum_speed");
         mock().expectOneCall("delay_ms")
             .withUnsignedIntParameter("delay_time", 2000);
     }
-    mock().expectOneCall("disable_power");
 
     vacuum_test();
 }
