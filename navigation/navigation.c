@@ -486,11 +486,11 @@ void init_rotate_state(struct rotate_state *state, enum rotation_direction direc
     clear_2_encoder_ticks();
 
     if (direction == ROTATE_CLOCKWISE) {
-        set_wheel_motor_1_direction_backward();
-        set_wheel_motor_2_direction_forward();
-    } else {
         set_wheel_motor_1_direction_forward();
         set_wheel_motor_2_direction_backward();
+    } else {
+        set_wheel_motor_1_direction_backward();
+        set_wheel_motor_2_direction_forward();
     }
 }
 

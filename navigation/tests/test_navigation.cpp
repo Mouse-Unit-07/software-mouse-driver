@@ -744,8 +744,8 @@ TEST(NavigationTests, InitRotateStateClockwiseInitializesHardware)
     mock().expectOneCall("clear_1_encoder_ticks");
     mock().expectOneCall("clear_2_encoder_ticks");
 
-    mock().expectOneCall("set_wheel_motor_1_direction_backward");
-    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
 
     init_rotate_state(&state, ROTATE_CLOCKWISE);
 
@@ -762,8 +762,8 @@ TEST(NavigationTests, InitRotateStateCounterClockwiseInitializesHardware)
     mock().expectOneCall("clear_1_encoder_ticks");
     mock().expectOneCall("clear_2_encoder_ticks");
 
-    mock().expectOneCall("set_wheel_motor_1_direction_forward");
-    mock().expectOneCall("set_wheel_motor_2_direction_backward");
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
 
     init_rotate_state(&state, ROTATE_COUNTER_CLOCKWISE);
 }
@@ -935,8 +935,8 @@ TEST(NavigationTests, RotateStopsMotorsWhenMaxStepsExceeded)
     mock().expectOneCall("clear_1_encoder_ticks");
     mock().expectOneCall("clear_2_encoder_ticks");
 
-    mock().expectOneCall("set_wheel_motor_1_direction_backward");
-    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
 
     mock().ignoreOtherCalls();
 
@@ -956,8 +956,8 @@ TEST(NavigationTests, RotateClockwise90DegInitializesClockwiseRotation)
     mock().expectOneCall("clear_1_encoder_ticks");
     mock().expectOneCall("clear_2_encoder_ticks");
 
-    mock().expectOneCall("set_wheel_motor_1_direction_backward");
-    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
 
     mock().ignoreOtherCalls();
 
@@ -977,8 +977,8 @@ TEST(NavigationTests, RotateCounterClockwise90DegInitializesCounterClockwiseRota
     mock().expectOneCall("clear_1_encoder_ticks");
     mock().expectOneCall("clear_2_encoder_ticks");
 
-    mock().expectOneCall("set_wheel_motor_1_direction_forward");
-    mock().expectOneCall("set_wheel_motor_2_direction_backward");
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
 
     mock().ignoreOtherCalls();
 
@@ -998,8 +998,8 @@ TEST(NavigationTests, Rotate180DegInitializesClockwiseRotation)
     mock().expectOneCall("clear_1_encoder_ticks");
     mock().expectOneCall("clear_2_encoder_ticks");
 
-    mock().expectOneCall("set_wheel_motor_1_direction_backward");
-    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
 
     mock().ignoreOtherCalls();
 
