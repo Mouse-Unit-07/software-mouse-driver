@@ -849,60 +849,36 @@ TEST(NavigationTests, CalculateRotateErrorsUsesAbsoluteEncoderValues)
     CHECK(errors.angle_error == 30);
 }
 
-TEST(NavigationTests, CalculateRotateMotorOutputClockwiseZeroErrorUsesBaseSpeed)
+TEST(NavigationTests, CalculateRotateMotorOutputZeroErrorUsesBaseSpeed)
 {
     struct rotate_errors errors{0};
     struct rotate_control_config cfg{create_default_rotate_control_config()};
-    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
     CHECK(output.motor_1_speed == 200);
     CHECK(output.motor_2_speed == 200);
 }
 
-TEST(NavigationTests, CalculateRotateMotorOutputClockwisePositiveControl)
+TEST(NavigationTests, CalculateRotateMotorOutputPositiveControl)
 {
     struct rotate_errors errors{0};
     errors.velocity_error = 10;
 
     struct rotate_control_config cfg{create_default_rotate_control_config()};
-    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
     CHECK(output.motor_1_speed > output.motor_2_speed);
 }
 
-TEST(NavigationTests, CalculateRotateMotorOutputClockwiseNegativeControl)
+TEST(NavigationTests, CalculateRotateMotorOutputNegativeControl)
 {
     struct rotate_errors errors{0};
     errors.velocity_error = -10;
 
     struct rotate_control_config cfg{create_default_rotate_control_config()};
-    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
     CHECK(output.motor_2_speed > output.motor_1_speed);
-}
-
-TEST(NavigationTests, CalculateRotateMotorOutputCounterClockwisePositiveControl)
-{
-    struct rotate_errors errors{0};
-    errors.velocity_error = 10;
-
-    struct rotate_control_config cfg{create_default_rotate_control_config()};
-    struct motor_output output{
-        calculate_rotate_motor_output(errors, ROTATE_COUNTER_CLOCKWISE, cfg)};
-
-    CHECK(output.motor_2_speed > output.motor_1_speed);
-}
-
-TEST(NavigationTests, CalculateRotateMotorOutputCounterClockwiseNegativeControl)
-{
-    struct rotate_errors errors{0};
-    errors.velocity_error = -10;
-
-    struct rotate_control_config cfg{create_default_rotate_control_config()};
-    struct motor_output output{
-        calculate_rotate_motor_output(errors, ROTATE_COUNTER_CLOCKWISE, cfg)};
-
-    CHECK(output.motor_1_speed > output.motor_2_speed);
 }
 
 TEST(NavigationTests, CalculateRotateMotorOutputClampsMaximum)
@@ -911,7 +887,7 @@ TEST(NavigationTests, CalculateRotateMotorOutputClampsMaximum)
     errors.velocity_error = 100000;
 
     struct rotate_control_config cfg{create_default_rotate_control_config()};
-    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
     CHECK(output.motor_1_speed == 255);
 }
@@ -922,7 +898,7 @@ TEST(NavigationTests, CalculateRotateMotorOutputClampsMinimum)
     errors.velocity_error = -100000;
 
     struct rotate_control_config cfg{create_default_rotate_control_config()};
-    struct motor_output output{calculate_rotate_motor_output(errors, ROTATE_CLOCKWISE, cfg)};
+    struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
     CHECK(output.motor_1_speed == 100);
 }

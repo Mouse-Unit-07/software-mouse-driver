@@ -508,7 +508,7 @@ void rotate(enum rotation_direction direction, int32_t target_ticks)
     while (!is_tick_average_at_target(target_ticks)) {
         struct rotate_errors errors = calculate_rotate_errors(&state);
         struct motor_output output =
-            calculate_rotate_motor_output(errors, direction, rotate_control_config);
+            calculate_rotate_motor_output(errors, rotate_control_config);
 
         apply_motor_output(output);
 
@@ -551,7 +551,6 @@ struct rotate_errors calculate_rotate_errors(struct rotate_state *state)
 }
 
 struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
-                                                  enum rotation_direction direction,
                                                   struct rotate_control_config cfg)
 {
     struct motor_output output = {0};
@@ -567,13 +566,8 @@ struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
     int32_t speed_1 = 0;
     int32_t speed_2 = 0;
 
-    if (direction == ROTATE_CLOCKWISE) {
-        speed_1 = cfg.base_speed + control;
-        speed_2 = cfg.base_speed - control;
-    } else {
-        speed_1 = cfg.base_speed - control;
-        speed_2 = cfg.base_speed + control;
-    }
+    speed_1 = cfg.base_speed + control;
+    speed_2 = cfg.base_speed - control;
 
     speed_1 = clamp_int32(speed_1, cfg.min_speed, cfg.max_speed);
     speed_2 = clamp_int32(speed_2, cfg.min_speed, cfg.max_speed);
