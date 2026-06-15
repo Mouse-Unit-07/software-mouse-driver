@@ -436,11 +436,11 @@ struct move_forward_errors calculate_move_forward_errors(struct move_forward_sta
         int32_t target_ir = (int32_t)wall_target;
 
         if (wall_mode == WALL_FEEDBACK_LEFT) {
-            errors.ir_error = target_ir - ir_2;
+            errors.ir_error = -(target_ir - ir_2);
         } else if (wall_mode == WALL_FEEDBACK_RIGHT) {
-            errors.ir_error = -(target_ir - ir_3);
+            errors.ir_error = target_ir - ir_3;
         } else if (wall_mode == WALL_FEEDBACK_BOTH) {
-            errors.ir_error = ir_3 - ir_2;
+            errors.ir_error = ir_2 - ir_3;
         }
     }
     errors.ir_derivative = errors.ir_error - state->prev_ir_error;

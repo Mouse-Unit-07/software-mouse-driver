@@ -595,7 +595,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsLeftWallModeCalculatesIrError)
     struct move_forward_errors errors{
         calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u)};
 
-    CHECK(errors.ir_error == 50);
+    LONGS_EQUAL(-50, errors.ir_error);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsRightWallModeCalculatesIrError)
@@ -607,7 +607,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsRightWallModeCalculatesIrError)
     struct move_forward_errors errors{
         calculate_move_forward_errors(&state, WALL_FEEDBACK_RIGHT, 500u)};
 
-    CHECK(errors.ir_error == -50);
+    LONGS_EQUAL(50, errors.ir_error);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsBothWallModeCalculatesIrError)
@@ -620,7 +620,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsBothWallModeCalculatesIrError)
     struct move_forward_errors errors{
         calculate_move_forward_errors(&state, WALL_FEEDBACK_BOTH, 0u)};
 
-    CHECK(errors.ir_error == 150);
+    LONGS_EQUAL(-150, errors.ir_error);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesIrDerivative)
@@ -633,8 +633,8 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesIrDerivative)
     struct move_forward_errors errors{
         calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u)};
 
-    CHECK(errors.ir_error == 50);
-    CHECK(errors.ir_derivative == 40);
+    LONGS_EQUAL(-50, errors.ir_error);
+    LONGS_EQUAL(-60, errors.ir_derivative);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsNoWallModeLeavesIrErrorZero)
