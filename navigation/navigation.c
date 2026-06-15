@@ -502,7 +502,7 @@ void rotate(enum rotation_direction direction, int32_t target_ticks)
 
     memset(&rotate_statistics, 0, sizeof(rotate_statistics));
 
-    const uint32_t MAX_STEPS = 10000u;
+    const uint32_t MAX_STEPS = 30000u;
     uint32_t steps = 0u;
 
     while (!is_tick_average_at_target(target_ticks)) {
