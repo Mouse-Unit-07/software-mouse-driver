@@ -231,7 +231,6 @@ void init_rotate_state(struct rotate_state *state, enum rotation_direction direc
 void rotate(enum rotation_direction direction, int32_t target_ticks);
 struct rotate_errors calculate_rotate_errors(struct rotate_state *state);
 struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
-                                                  enum rotation_direction direction,
                                                   struct rotate_control_config cfg);
 
 /*----------------------------------------------------------------------------*/
