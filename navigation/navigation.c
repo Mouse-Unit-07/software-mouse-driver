@@ -364,12 +364,19 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
     const uint32_t MAX_STEPS = 10000u;
     uint32_t steps = 0u;
 
+    enum wall_feedback_mode previous_mode = initial_mode;
+
     while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks)) {
         update_side_wall_detector(&detector);
 
         enum wall_feedback_mode mode = initial_mode;
         if (!avoid_mode_switching) {
             mode = determine_wall_mode(&detector);
+            
+            if (mode != previous_mode) {
+                reset_move_forward_error_history(&state);
+                previous_mode = mode;
+            }
         }
         struct move_forward_control_config cfg = {0};
         if (mode == WALL_FEEDBACK_NONE) {
@@ -474,6 +481,16 @@ struct motor_output calculate_move_forward_motor_output(struct move_forward_erro
     output.motor_2_speed = (uint8_t)speed_2;
 
     return output;
+}
+
+void reset_move_forward_error_history(struct move_forward_state *state)
+{
+    state->prev_velocity_error = 0;
+    state->prev_angle_error = 0;
+    state->prev_ir_error = 0;
+
+    state->prev_enc_1_ticks = get_encoder_1_ticks();
+    state->prev_enc_2_ticks = get_encoder_2_ticks();
 }
 
 /*----------------------------------------------------------------------------*/

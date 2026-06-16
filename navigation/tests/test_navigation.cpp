@@ -706,6 +706,27 @@ TEST(NavigationTests, CalculateMoveForwardMotorOutputClampsMinimum)
     CHECK(output.motor_1_speed == 100);
 }
 
+TEST(NavigationTests, ResetMoveForwardErrorHistoryClearsDerivativeState)
+{
+    struct move_forward_state state{0};
+
+    state.prev_velocity_error = 10;
+    state.prev_angle_error = 20;
+    state.prev_ir_error = 30;
+
+    fake_encoder_1_ticks = 100;
+    fake_encoder_2_ticks = 200;
+
+    reset_move_forward_error_history(&state);
+
+    LONGS_EQUAL(0, state.prev_velocity_error);
+    LONGS_EQUAL(0, state.prev_angle_error);
+    LONGS_EQUAL(0, state.prev_ir_error);
+
+    LONGS_EQUAL(100, state.prev_enc_1_ticks);
+    LONGS_EQUAL(200, state.prev_enc_2_ticks);
+}
+
 TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
 {
     struct mouse_physical_params mouse_params{create_mouse_physical_params()};
