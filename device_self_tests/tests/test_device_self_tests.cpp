@@ -571,6 +571,36 @@ TEST(DeviceSelfTestsTests, WheelMotorAndEncoderTestCallsFunctions)
     wheel_motor_and_encoder_test(cfg);
 }
 
+TEST(DeviceSelfTestsTests, WheelMotorDriftTestCallsFunctions)
+{
+    wheel_motor_and_encoder_test_config cfg = {0};
+
+    cfg.timeout_ms = 2000u;
+    cfg.drift_delay_ms = 500u;
+    cfg.encoder_target = 50;
+    cfg.start_speed = 100u;
+    cfg.end_speed = 150u;
+    cfg.speed_step = 2u;
+
+    const uint32_t SPEED_COUNT{((cfg.end_speed - cfg.start_speed) / cfg.speed_step) + 1u};
+
+    mock().expectOneCall("start_timer");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+
+    mock().expectNCalls(SPEED_COUNT, "reset_timer");
+
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
+
+    mock().expectNCalls(SPEED_COUNT, "reset_timer");
+
+    mock().ignoreOtherCalls();
+
+    wheel_motor_drift_test(cfg);
+}
+
 TEST(DeviceSelfTestsTests, MoveWithAccelDecelProfileZeroPercentUsesTopSpeedOnly)
 {
     move_until_encoder_count_config cfg = {0};
