@@ -601,90 +601,6 @@ TEST(DeviceSelfTestsTests, WheelMotorDriftTestCallsFunctions)
     wheel_motor_drift_test(cfg);
 }
 
-TEST(DeviceSelfTestsTests, MoveWithAccelDecelProfileZeroPercentUsesTopSpeedOnly)
-{
-    move_until_encoder_count_config cfg = {0};
-
-    cfg.encoder_target = 10;
-    cfg.timeout_ms = 2000u;
-    cfg.drift_delay_ms = 500u;
-    cfg.set_speed = set_wheel_motor_1_speed;
-    cfg.get_ticks = get_encoder_1_ticks;
-    cfg.clear_ticks = clear_1_encoder_ticks;
-
-    constexpr uint8_t START_SPEED{50u};
-    constexpr uint8_t TOP_SPEED{150u};
-
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-
-    for (int i = 0; i < 3; i++) {
-        mock().expectOneCall("set_wheel_motor_1_speed")
-            .withUnsignedIntParameter("speed", TOP_SPEED);
-
-        mock().expectOneCall("get_current_time_ms")
-            .andReturnValue(0);
-    }
-
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 0u);
-
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", cfg.drift_delay_ms);
-
-    move_with_accel_decel_profile(cfg, START_SPEED, TOP_SPEED, 0u);
-}
-
-TEST(DeviceSelfTestsTests, MoveWithAccelDecelProfileRampsSpeed)
-{
-    move_until_encoder_count_config cfg = {0};
-
-    cfg.encoder_target = 10;
-    cfg.timeout_ms = 2000u;
-    cfg.drift_delay_ms = 500u;
-    cfg.set_speed = set_wheel_motor_1_speed;
-    cfg.get_ticks = get_encoder_1_ticks;
-    cfg.clear_ticks = clear_1_encoder_ticks;
-
-    constexpr uint8_t START_SPEED{50u};
-    constexpr uint8_t TOP_SPEED{150u};
-    constexpr uint32_t ACCEL_DECEL_PERCENT{80u};
-
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-
-    /* current_ticks = 2, accel_ticks = (10 * 80) / 200 = 4 */
-    /* speed = 50 + ((150 - 50) * 2 / 4) = 100 */
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 100u);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", TOP_SPEED);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 100u);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 0u);
-
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", cfg.drift_delay_ms);
-
-    move_with_accel_decel_profile(cfg, START_SPEED, TOP_SPEED, ACCEL_DECEL_PERCENT);
-}
-
 TEST(DeviceSelfTestsTests, WheelMotorDecelerationTestCallsFunctions)
 {
     wheel_motor_deceleration_test_config cfg = {0};
@@ -700,20 +616,14 @@ TEST(DeviceSelfTestsTests, WheelMotorDecelerationTestCallsFunctions)
 
     mock().expectOneCall("start_timer");
 
-    mock().expectOneCall(
-        "set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_1_direction_forward");
+    mock().expectOneCall("set_wheel_motor_2_direction_forward");
+
     mock().expectNCalls(RATIO_COUNT, "reset_timer");
 
-    mock().expectOneCall(
-        "set_wheel_motor_2_direction_forward");
-    mock().expectNCalls(RATIO_COUNT, "reset_timer");
+    mock().expectOneCall("set_wheel_motor_1_direction_backward");
+    mock().expectOneCall("set_wheel_motor_2_direction_backward");
 
-    mock().expectOneCall(
-        "set_wheel_motor_1_direction_backward");
-    mock().expectNCalls(RATIO_COUNT, "reset_timer");
-
-    mock().expectOneCall(
-        "set_wheel_motor_2_direction_backward");
     mock().expectNCalls(RATIO_COUNT, "reset_timer");
 
     mock().ignoreOtherCalls();

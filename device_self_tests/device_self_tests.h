@@ -72,7 +72,5 @@ void vacuum_test(void);
 /* helpers exposed for testing */
 uint32_t measure_average_reading(uint32_t measurement_time_ms, uint32_t (*read_sensor)(void));
 void move_until_encoder_count(struct move_until_encoder_count_config cfg);
-void move_with_accel_decel_profile(struct move_until_encoder_count_config cfg, uint8_t start_speed,
-                                   uint8_t top_speed, uint32_t accel_decel_percent);
 
 #endif /* DEVICE_SELF_TESTS_H_ */
