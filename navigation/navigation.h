@@ -216,6 +216,7 @@ struct move_forward_errors calculate_move_forward_errors(struct move_forward_sta
                                                          uint32_t wall_target);
 struct motor_output calculate_move_forward_motor_output(struct move_forward_errors errors,
                                                         struct move_forward_control_config cfg);
+void reset_move_forward_error_history(struct move_forward_state *state);
 
 /*----------------------------------------------------------------------------*/
 /* rotation */
