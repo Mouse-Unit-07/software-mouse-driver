@@ -28,7 +28,6 @@ struct move_until_encoder_count_config {
     uint32_t drift_delay_ms;
     int32_t encoder_target;
     uint8_t speed;
-
     void (*set_speed)(uint8_t speed);
     int32_t (*get_ticks)(void);
     void (*clear_ticks)(void);
@@ -38,7 +37,6 @@ struct wheel_motor_and_encoder_test_config {
     uint32_t timeout_ms;
     uint32_t drift_delay_ms;
     int32_t encoder_target;
-
     uint8_t start_speed;
     uint8_t end_speed;
     uint8_t speed_step;
@@ -67,6 +65,7 @@ void infrared_sensors_distance_test(struct ir_distance_test_config cfg);
 void infrared_sensors_free_reading_test(struct ir_free_reading_test_config cfg);
 void infrared_sensors_read_speed_test(uint32_t time_per_sensor_ms);
 void wheel_motor_and_encoder_test(struct wheel_motor_and_encoder_test_config cfg);
+void wheel_motor_drift_test(struct wheel_motor_and_encoder_test_config cfg);
 void wheel_motor_deceleration_test(struct wheel_motor_deceleration_test_config cfg);
 void vacuum_test(void);
 

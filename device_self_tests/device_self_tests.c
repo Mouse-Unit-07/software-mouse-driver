@@ -49,6 +49,9 @@ static void run_motor_test_sweep(const struct wheel_motor_name_and_encoder_funct
                                  struct wheel_motor_and_encoder_test_config cfg,
                                  bool is_direction_forward);
 
+static void run_wheel_motor_drift_sweep(struct wheel_motor_and_encoder_test_config cfg,
+                                        bool is_direction_forward);
+
 static void run_motor_deceleration_test_sweep(
     const struct wheel_motor_name_and_encoder_functions *motor,
     struct wheel_motor_deceleration_test_config cfg,
@@ -252,6 +255,19 @@ void wheel_motor_and_encoder_test(struct wheel_motor_and_encoder_test_config cfg
     }
 }
 
+void wheel_motor_drift_test(struct wheel_motor_and_encoder_test_config cfg)
+{
+    start_timer();
+
+    printf("encoder target for each run: %" PRId32 "\r\n", cfg.encoder_target);
+
+    printf("moving motors forward\r\n");
+    run_wheel_motor_drift_sweep(cfg, true);
+
+    printf("moving motors backward\r\n");
+    run_wheel_motor_drift_sweep(cfg, false);
+}
+
 void wheel_motor_deceleration_test(struct wheel_motor_deceleration_test_config cfg)
 {
     start_timer();
@@ -320,6 +336,66 @@ static void run_motor_test_sweep(const struct wheel_motor_name_and_encoder_funct
         move_cfg.clear_ticks = motor->clear_ticks;
 
         move_until_encoder_count(move_cfg);
+    }
+}
+
+static void run_wheel_motor_drift_sweep(struct wheel_motor_and_encoder_test_config cfg,
+                                        bool is_direction_forward)
+{
+    if (cfg.speed_step == 0u) {
+        return;
+    }
+
+    if (is_direction_forward) {
+        set_wheel_motor_1_direction_forward();
+        set_wheel_motor_2_direction_forward();
+    } else {
+        set_wheel_motor_1_direction_backward();
+        set_wheel_motor_2_direction_backward();
+    }
+
+    for (uint32_t speed = cfg.start_speed; speed <= cfg.end_speed; speed += cfg.speed_step) {
+        printf("speed: %" PRIu32 "\r\n", speed);
+
+        clear_1_encoder_ticks();
+        clear_2_encoder_ticks();
+
+        reset_timer();
+
+        uint32_t start_time_ms = get_current_time_ms();
+
+        int32_t prev_enc_1 = get_encoder_1_ticks();
+        int32_t prev_enc_2 = get_encoder_2_ticks();
+
+        while ((abs(get_encoder_1_ticks()) < abs(cfg.encoder_target))
+               && (abs(get_encoder_2_ticks()) < abs(cfg.encoder_target))) {
+            set_wheel_motor_1_speed((uint8_t)speed);
+            set_wheel_motor_2_speed((uint8_t)speed);
+
+            int32_t current_enc_1 = get_encoder_1_ticks();
+            int32_t current_enc_2 = get_encoder_2_ticks();
+
+            if (((get_current_time_ms() - start_time_ms) > cfg.timeout_ms)
+                && (current_enc_1 == prev_enc_1) && (current_enc_2 == prev_enc_2)) {
+                break;
+            }
+
+            prev_enc_1 = current_enc_1;
+            prev_enc_2 = current_enc_2;
+        }
+
+        set_wheel_motor_1_speed(0u);
+        set_wheel_motor_2_speed(0u);
+
+        uint32_t end_time_ms = get_current_time_ms();
+
+        delay_ms(cfg.drift_delay_ms);
+
+        int32_t enc1 = get_encoder_1_ticks();
+        int32_t enc2 = get_encoder_2_ticks();
+
+        printf("enc1=%" PRId32 ", enc2=%" PRId32 ", %" PRIu32 "ms\r\n", enc1, enc2,
+               end_time_ms - start_time_ms);
     }
 }
 
