@@ -312,6 +312,27 @@ TEST(NavigationTests, InitNavigationClearsRotateStatistics)
     MEMCMP_EQUAL(&expected, &stats, sizeof(stats));
 }
 
+TEST(NavigationTests, InitNavigationClearsMoveForwardCalculatedParams)
+{
+    struct move_forward_control_config cfg{};
+    cfg.base_speed = 100;
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    init_navigation();
+
+    struct move_forward_calculated_params no_wall{get_no_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params one_wall{get_one_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params both_wall{get_both_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params expected{0};
+
+    MEMCMP_EQUAL(&expected, &no_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &one_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &both_wall, sizeof(expected));
+}
+
 TEST(NavigationTests, DeinitNavigationClearsNavigationParameters)
 {
     struct mouse_physical_params mouse{create_mouse_physical_params()};
@@ -375,6 +396,27 @@ TEST(NavigationTests, DeinitNavigationClearsRotateConfig)
     struct rotate_control_config expected = {0};
 
     MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
+}
+
+TEST(NavigationTests, DeinitNavigationClearsMoveForwardCalculatedParams)
+{
+    struct move_forward_control_config cfg{};
+    cfg.base_speed = 100;
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    deinit_navigation();
+
+    struct move_forward_calculated_params no_wall{get_no_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params one_wall{get_one_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params both_wall{get_both_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params expected{0};
+
+    MEMCMP_EQUAL(&expected, &no_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &one_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &both_wall, sizeof(expected));
 }
 
 TEST(NavigationTests, CalculateMouseParamsStoresPhysicalParameters)
@@ -749,6 +791,20 @@ TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
     mock().ignoreOtherCalls();
 
     move_forward();
+}
+
+TEST(NavigationTests, SetMoveForwardControlConfigFunctionsCalculateDriftTicks)
+{
+    struct move_forward_control_config cfg{};
+    cfg.base_speed = 100;
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    LONGS_EQUAL(18, get_no_wall_move_forward_calculated_params().drift_ticks);
+    LONGS_EQUAL(18, get_one_wall_move_forward_calculated_params().drift_ticks);
+    LONGS_EQUAL(18, get_both_wall_move_forward_calculated_params().drift_ticks);
 }
 
 /*----------------------------------------------------------------------------*/

@@ -30,6 +30,9 @@ static int32_t clamp_int32(int32_t val, int32_t min, int32_t max);
 static int32_t round_to_int32(double value);
 static uint32_t round_positive_to_uint32(double value);
 
+static void reset_navigation_state(void);
+static int32_t calculate_move_forward_drift_ticks(struct move_forward_control_config cfg);
+static struct move_forward_calculated_params get_move_forward_calculated_params(enum wall_feedback_mode mode);
 static void calculate_side_wall_params(void);
 
 /*----------------------------------------------------------------------------*/
@@ -44,6 +47,9 @@ static struct navigation_params navigation_params = {0};
 static struct move_forward_control_config no_wall_move_forward_control_config = {0};
 static struct move_forward_control_config one_wall_move_forward_control_config = {0};
 static struct move_forward_control_config both_wall_move_forward_control_config = {0};
+static struct move_forward_calculated_params no_wall_move_forward_calculated_params = {0};
+static struct move_forward_calculated_params one_wall_move_forward_calculated_params = {0};
+static struct move_forward_calculated_params both_wall_move_forward_calculated_params = {0};
 static struct rotate_control_config rotate_control_config = {0};
 static struct side_wall_detection_config side_wall_detection_config = {0};
 static struct side_wall_calculated_params side_wall_calculated_params = {0};
@@ -60,54 +66,12 @@ static struct rotate_statistics rotate_statistics = {0};
 /*----------------------------------------------------------------------------*/
 void init_navigation(void)
 {
-    memset(&mouse_physical_params, 0, sizeof(mouse_physical_params));
-    memset(&mouse_params, 0, sizeof(mouse_params));
-    memset(&maze_physical_params, 0, sizeof(maze_physical_params));
-    memset(&maze_params, 0, sizeof(maze_params));
-    memset(&navigation_params, 0, sizeof(navigation_params));
-
-    memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
-    memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
-    memset(&both_wall_move_forward_control_config, 0,
-           sizeof(both_wall_move_forward_control_config));
-    memset(&rotate_control_config, 0, sizeof(rotate_control_config));
-
-    memset(&side_wall_detection_config, 0, sizeof(side_wall_detection_config));
-    memset(&side_wall_calculated_params, 0, sizeof(side_wall_calculated_params));
-
-    memset(&front_wall_detection_config, 0, sizeof(front_wall_detection_config));
-
-    left_wall_present = false;
-    right_wall_present = false;
-
-    memset(&move_forward_statistics, 0, sizeof(move_forward_statistics));
-    memset(&rotate_statistics, 0, sizeof(rotate_statistics));
+    reset_navigation_state();
 }
 
 void deinit_navigation(void)
 {
-    memset(&mouse_physical_params, 0, sizeof(mouse_physical_params));
-    memset(&mouse_params, 0, sizeof(mouse_params));
-    memset(&maze_physical_params, 0, sizeof(maze_physical_params));
-    memset(&maze_params, 0, sizeof(maze_params));
-    memset(&navigation_params, 0, sizeof(navigation_params));
-
-    memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
-    memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
-    memset(&both_wall_move_forward_control_config, 0,
-           sizeof(both_wall_move_forward_control_config));
-    memset(&rotate_control_config, 0, sizeof(rotate_control_config));
-
-    memset(&side_wall_detection_config, 0, sizeof(side_wall_detection_config));
-    memset(&side_wall_calculated_params, 0, sizeof(side_wall_calculated_params));
-
-    memset(&front_wall_detection_config, 0, sizeof(front_wall_detection_config));
-
-    left_wall_present = false;
-    right_wall_present = false;
-
-    memset(&move_forward_statistics, 0, sizeof(move_forward_statistics));
-    memset(&rotate_statistics, 0, sizeof(rotate_statistics));
+    reset_navigation_state();
 }
 
 void calculate_mouse_params(struct mouse_physical_params p)
@@ -175,19 +139,30 @@ struct navigation_params get_navigation_params(void)
 
 /*----------------------------------------------------------------------------*/
 /* move forward */
+static int32_t calculate_move_forward_drift_ticks(struct move_forward_control_config cfg)
+{
+    return round_to_int32((0.24 * cfg.base_speed) - 6.0);
+}
+
 void set_no_wall_move_forward_control_config(struct move_forward_control_config cfg)
 {
     no_wall_move_forward_control_config = cfg;
+
+    no_wall_move_forward_calculated_params.drift_ticks = calculate_move_forward_drift_ticks(cfg);
 }
 
 void set_one_wall_move_forward_control_config(struct move_forward_control_config cfg)
 {
     one_wall_move_forward_control_config = cfg;
+
+    one_wall_move_forward_calculated_params.drift_ticks = calculate_move_forward_drift_ticks(cfg);
 }
 
 void set_both_wall_move_forward_control_config(struct move_forward_control_config cfg)
 {
     both_wall_move_forward_control_config = cfg;
+
+    both_wall_move_forward_calculated_params.drift_ticks = calculate_move_forward_drift_ticks(cfg);
 }
 
 struct move_forward_control_config get_no_wall_move_forward_control_config(void)
@@ -203,6 +178,21 @@ struct move_forward_control_config get_one_wall_move_forward_control_config(void
 struct move_forward_control_config get_both_wall_move_forward_control_config(void)
 {
     return both_wall_move_forward_control_config;
+}
+
+struct move_forward_calculated_params get_no_wall_move_forward_calculated_params(void)
+{
+    return no_wall_move_forward_calculated_params;
+}
+
+struct move_forward_calculated_params get_one_wall_move_forward_calculated_params(void)
+{
+    return one_wall_move_forward_calculated_params;
+}
+
+struct move_forward_calculated_params get_both_wall_move_forward_calculated_params(void)
+{
+    return both_wall_move_forward_calculated_params;
 }
 
 void move_forward(void)
@@ -330,6 +320,39 @@ static uint32_t round_positive_to_uint32(double value)
 {
     return (uint32_t)(value + 0.5);
 }
+
+static void reset_navigation_state(void)
+{
+    memset(&mouse_physical_params, 0, sizeof(mouse_physical_params));
+    memset(&mouse_params, 0, sizeof(mouse_params));
+    memset(&maze_physical_params, 0, sizeof(maze_physical_params));
+    memset(&maze_params, 0, sizeof(maze_params));
+    memset(&navigation_params, 0, sizeof(navigation_params));
+
+    memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
+    memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
+    memset(&both_wall_move_forward_control_config, 0,
+           sizeof(both_wall_move_forward_control_config));
+    memset(&no_wall_move_forward_calculated_params, 0,
+           sizeof(no_wall_move_forward_calculated_params));
+    memset(&one_wall_move_forward_calculated_params, 0,
+           sizeof(one_wall_move_forward_calculated_params));
+    memset(&both_wall_move_forward_calculated_params, 0,
+           sizeof(both_wall_move_forward_calculated_params));
+    memset(&rotate_control_config, 0, sizeof(rotate_control_config));
+
+    memset(&side_wall_detection_config, 0, sizeof(side_wall_detection_config));
+    memset(&side_wall_calculated_params, 0, sizeof(side_wall_calculated_params));
+
+    memset(&front_wall_detection_config, 0, sizeof(front_wall_detection_config));
+
+    left_wall_present = false;
+    right_wall_present = false;
+
+    memset(&move_forward_statistics, 0, sizeof(move_forward_statistics));
+    memset(&rotate_statistics, 0, sizeof(rotate_statistics));
+}
+
 bool is_tick_average_at_target(int32_t target_ticks)
 {
     int32_t avg_ticks = (abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2;
@@ -362,6 +385,20 @@ void init_move_forward_state(struct move_forward_state *state)
     set_wheel_motor_2_direction_forward();
 }
 
+static struct move_forward_calculated_params get_move_forward_calculated_params(enum wall_feedback_mode mode)
+{
+    if (mode == WALL_FEEDBACK_NONE) {
+        return no_wall_move_forward_calculated_params;
+    } else if (mode == WALL_FEEDBACK_BOTH) {
+        return both_wall_move_forward_calculated_params;
+    } else {
+        return one_wall_move_forward_calculated_params;
+    }
+
+    struct move_forward_calculated_params params = {0};
+    return params;
+}
+
 void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoid_mode_switching)
 {
     struct move_forward_state state = {0};
@@ -377,7 +414,11 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
     enum wall_feedback_mode previous_mode = initial_mode;
 
-    while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks)) {
+    struct move_forward_calculated_params calculated_params =
+        get_move_forward_calculated_params(initial_mode);
+
+    while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks
+                                      - calculated_params.drift_ticks)) {
         update_side_wall_detector(&detector);
 
         enum wall_feedback_mode mode = initial_mode;
@@ -386,6 +427,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
             if (mode != previous_mode) {
                 reset_move_forward_error_history(&state);
+                calculated_params = get_move_forward_calculated_params(initial_mode);
                 previous_mode = mode;
             }
         }

@@ -63,6 +63,10 @@ struct move_forward_control_config {
     uint32_t wall_target;
 };
 
+struct move_forward_calculated_params {
+    int32_t drift_ticks;
+};
+
 enum wall_feedback_mode
 {
     WALL_FEEDBACK_NONE,
@@ -207,6 +211,9 @@ void set_both_wall_move_forward_control_config(struct move_forward_control_confi
 struct move_forward_control_config get_no_wall_move_forward_control_config(void);
 struct move_forward_control_config get_one_wall_move_forward_control_config(void);
 struct move_forward_control_config get_both_wall_move_forward_control_config(void);
+struct move_forward_calculated_params get_no_wall_move_forward_calculated_params(void);
+struct move_forward_calculated_params get_one_wall_move_forward_calculated_params(void);
+struct move_forward_calculated_params get_both_wall_move_forward_calculated_params(void);
 
 /* helpers exposed for testing */
 void init_move_forward_state(struct move_forward_state *state);
