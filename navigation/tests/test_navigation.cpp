@@ -432,9 +432,9 @@ TEST(NavigationTests, CalculateNavigationParamsCalculatesTargets)
 
     struct navigation_params nav = get_navigation_params();
 
-    CHECK(nav.move_forward_one_cell_target_ticks == 90);
-    CHECK(nav.rotate_90_degree_target_ticks == 35);
-    CHECK(nav.rotate_180_degree_target_ticks == 71);
+    LONGS_EQUAL(91, nav.move_forward_one_cell_target_ticks);
+    LONGS_EQUAL(36, nav.rotate_90_degree_target_ticks);
+    LONGS_EQUAL(71, nav.rotate_180_degree_target_ticks);
 }
 
 TEST(NavigationTests, ApplyMotorOutputSetsMotorSpeeds)
@@ -1058,7 +1058,7 @@ TEST(NavigationTests, SetSideWallDetectionConfigCalculatesReadingStartOffsetTick
 
     struct side_wall_calculated_params params = get_side_wall_calculated_params();
 
-    CHECK(params.reading_start_offset_ticks == 45u);
+    LONGS_EQUAL(46u, params.reading_start_offset_ticks);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDoesNotCollectSamplesBeforeOffset)

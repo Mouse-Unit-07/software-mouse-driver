@@ -27,6 +27,8 @@
 /*                         Private Function Prototypes                        */
 /*----------------------------------------------------------------------------*/
 static int32_t clamp_int32(int32_t val, int32_t min, int32_t max);
+static int32_t round_to_int32(double value);
+static uint32_t round_positive_to_uint32(double value);
 
 static void calculate_side_wall_params(void);
 
@@ -134,14 +136,14 @@ void calculate_maze_params(struct maze_physical_params p)
 
 void calculate_navigation_params(void)
 {
-    navigation_params.move_forward_one_cell_target_ticks =
-        (int32_t)(maze_params.cell_size_mm * mouse_params.encoder_ticks_per_millimeter);
+    navigation_params.move_forward_one_cell_target_ticks = (int32_t)round_to_int32(
+        maze_params.cell_size_mm * mouse_params.encoder_ticks_per_millimeter);
 
     navigation_params.rotate_90_degree_target_ticks =
-        (int32_t)((M_PI / 2.0) * mouse_params.encoder_ticks_per_rotation_radian);
+        (int32_t)round_to_int32((M_PI / 2.0) * mouse_params.encoder_ticks_per_rotation_radian);
 
     navigation_params.rotate_180_degree_target_ticks =
-        (int32_t)(M_PI * mouse_params.encoder_ticks_per_rotation_radian);
+        (int32_t)round_to_int32(M_PI * mouse_params.encoder_ticks_per_rotation_radian);
 
     calculate_side_wall_params();
 }
@@ -319,6 +321,15 @@ static int32_t clamp_int32(int32_t val, int32_t min, int32_t max)
     return val;
 }
 
+static int32_t round_to_int32(double value)
+{
+    return (value >= 0.0) ? (int32_t)(value + 0.5) : (int32_t)(value - 0.5);
+}
+
+static uint32_t round_positive_to_uint32(double value)
+{
+    return (uint32_t)(value + 0.5);
+}
 bool is_tick_average_at_target(int32_t target_ticks)
 {
     int32_t avg_ticks = (abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2;
@@ -372,7 +383,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
         enum wall_feedback_mode mode = initial_mode;
         if (!avoid_mode_switching) {
             mode = determine_wall_mode(&detector);
-            
+
             if (mode != previous_mode) {
                 reset_move_forward_error_history(&state);
                 previous_mode = mode;
@@ -524,8 +535,7 @@ void rotate(enum rotation_direction direction, int32_t target_ticks)
 
     while (!is_tick_average_at_target(target_ticks)) {
         struct rotate_errors errors = calculate_rotate_errors(&state);
-        struct motor_output output =
-            calculate_rotate_motor_output(errors, rotate_control_config);
+        struct motor_output output = calculate_rotate_motor_output(errors, rotate_control_config);
 
         apply_motor_output(output);
 
@@ -600,8 +610,8 @@ struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
 static void calculate_side_wall_params(void)
 {
     side_wall_calculated_params.reading_start_offset_ticks =
-        (uint32_t)(side_wall_detection_config.reading_start_offset
-                   * navigation_params.move_forward_one_cell_target_ticks);
+        (uint32_t)round_positive_to_uint32(side_wall_detection_config.reading_start_offset
+                                           * navigation_params.move_forward_one_cell_target_ticks);
 }
 
 void init_side_wall_detector(struct side_wall_detector *detector)
