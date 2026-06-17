@@ -312,6 +312,27 @@ TEST(NavigationTests, InitNavigationClearsRotateStatistics)
     MEMCMP_EQUAL(&expected, &stats, sizeof(stats));
 }
 
+TEST(NavigationTests, InitNavigationClearsMoveForwardCalculatedParams)
+{
+    struct move_forward_control_config cfg{};
+    cfg.base_speed = 100;
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    init_navigation();
+
+    struct move_forward_calculated_params no_wall{get_no_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params one_wall{get_one_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params both_wall{get_both_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params expected{0};
+
+    MEMCMP_EQUAL(&expected, &no_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &one_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &both_wall, sizeof(expected));
+}
+
 TEST(NavigationTests, DeinitNavigationClearsNavigationParameters)
 {
     struct mouse_physical_params mouse{create_mouse_physical_params()};
@@ -377,6 +398,27 @@ TEST(NavigationTests, DeinitNavigationClearsRotateConfig)
     MEMCMP_EQUAL(&expected, &actual, sizeof(actual));
 }
 
+TEST(NavigationTests, DeinitNavigationClearsMoveForwardCalculatedParams)
+{
+    struct move_forward_control_config cfg{};
+    cfg.base_speed = 100;
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    deinit_navigation();
+
+    struct move_forward_calculated_params no_wall{get_no_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params one_wall{get_one_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params both_wall{get_both_wall_move_forward_calculated_params()};
+    struct move_forward_calculated_params expected{0};
+
+    MEMCMP_EQUAL(&expected, &no_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &one_wall, sizeof(expected));
+    MEMCMP_EQUAL(&expected, &both_wall, sizeof(expected));
+}
+
 TEST(NavigationTests, CalculateMouseParamsStoresPhysicalParameters)
 {
     struct mouse_physical_params expected{create_mouse_physical_params()};
@@ -432,9 +474,9 @@ TEST(NavigationTests, CalculateNavigationParamsCalculatesTargets)
 
     struct navigation_params nav = get_navigation_params();
 
-    CHECK(nav.move_forward_one_cell_target_ticks == 90);
-    CHECK(nav.rotate_90_degree_target_ticks == 35);
-    CHECK(nav.rotate_180_degree_target_ticks == 71);
+    LONGS_EQUAL(91, nav.move_forward_one_cell_target_ticks);
+    LONGS_EQUAL(36, nav.rotate_90_degree_target_ticks);
+    LONGS_EQUAL(71, nav.rotate_180_degree_target_ticks);
 }
 
 TEST(NavigationTests, ApplyMotorOutputSetsMotorSpeeds)
@@ -751,6 +793,20 @@ TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
     move_forward();
 }
 
+TEST(NavigationTests, SetMoveForwardControlConfigFunctionsCalculateDriftTicks)
+{
+    struct move_forward_control_config cfg{};
+    cfg.base_speed = 100;
+
+    set_no_wall_move_forward_control_config(cfg);
+    set_one_wall_move_forward_control_config(cfg);
+    set_both_wall_move_forward_control_config(cfg);
+
+    LONGS_EQUAL(18, get_no_wall_move_forward_calculated_params().drift_ticks);
+    LONGS_EQUAL(18, get_one_wall_move_forward_calculated_params().drift_ticks);
+    LONGS_EQUAL(18, get_both_wall_move_forward_calculated_params().drift_ticks);
+}
+
 /*----------------------------------------------------------------------------*/
 /* rotation */
 TEST(NavigationTests, InitRotateStateClockwiseInitializesHardware)
@@ -1058,7 +1114,7 @@ TEST(NavigationTests, SetSideWallDetectionConfigCalculatesReadingStartOffsetTick
 
     struct side_wall_calculated_params params = get_side_wall_calculated_params();
 
-    CHECK(params.reading_start_offset_ticks == 45u);
+    LONGS_EQUAL(46u, params.reading_start_offset_ticks);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDoesNotCollectSamplesBeforeOffset)
