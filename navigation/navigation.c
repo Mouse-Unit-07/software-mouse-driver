@@ -44,6 +44,7 @@ static struct maze_physical_params maze_physical_params = {0};
 static struct maze_calculated_params maze_params = {0};
 static struct navigation_params navigation_params = {0};
 
+static struct move_forward_common_config move_forward_common_config = {0};
 static struct move_forward_control_config no_wall_move_forward_control_config = {0};
 static struct move_forward_control_config one_wall_move_forward_control_config = {0};
 static struct move_forward_control_config both_wall_move_forward_control_config = {0};
@@ -142,6 +143,16 @@ struct navigation_params get_navigation_params(void)
 static int32_t calculate_move_forward_drift_ticks(struct move_forward_control_config cfg)
 {
     return round_to_int32((0.24 * cfg.base_speed) - 6.0);
+}
+
+void set_move_forward_common_config(struct move_forward_common_config cfg)
+{
+    move_forward_common_config = cfg;
+}
+
+struct move_forward_common_config get_move_forward_common_config(void)
+{
+    return move_forward_common_config;
 }
 
 void set_no_wall_move_forward_control_config(struct move_forward_control_config cfg)
@@ -329,6 +340,7 @@ static void reset_navigation_state(void)
     memset(&maze_params, 0, sizeof(maze_params));
     memset(&navigation_params, 0, sizeof(navigation_params));
 
+    memset(&move_forward_common_config, 0, sizeof(move_forward_common_config));
     memset(&no_wall_move_forward_control_config, 0, sizeof(no_wall_move_forward_control_config));
     memset(&one_wall_move_forward_control_config, 0, sizeof(one_wall_move_forward_control_config));
     memset(&both_wall_move_forward_control_config, 0,
@@ -399,6 +411,19 @@ static struct move_forward_calculated_params get_move_forward_calculated_params(
     return params;
 }
 
+bool emergency_stop_detected(void)
+{
+    uint32_t threshold = move_forward_common_config.emergency_stop_threshold;
+
+    if (threshold == 0u) {
+        return false;
+    }
+
+    uint32_t average = (read_ir_1_sensor() + read_ir_4_sensor()) / 2u;
+
+    return average >= threshold;
+}
+
 void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoid_mode_switching)
 {
     struct move_forward_state state = {0};
@@ -419,6 +444,11 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
     while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks
                                       - calculated_params.drift_ticks)) {
+        if (emergency_stop_detected()) {
+            move_forward_statistics.emergency_stop_occurred = true;
+            break;
+        }
+
         update_side_wall_detector(&detector);
 
         enum wall_feedback_mode mode = initial_mode;
@@ -427,7 +457,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
             if (mode != previous_mode) {
                 reset_move_forward_error_history(&state);
-                calculated_params = get_move_forward_calculated_params(initial_mode);
+                calculated_params = get_move_forward_calculated_params(mode);
                 previous_mode = mode;
             }
         }

@@ -161,6 +161,20 @@ void set_move_forward_control_configs(void)
     set_both_wall_move_forward_control_config(create_default_control_config());
 }
 
+struct move_forward_common_config create_default_move_forward_common_config(void)
+{
+    struct move_forward_common_config cfg{0};
+
+    cfg.emergency_stop_threshold = 1000u;
+
+    return cfg;
+}
+
+void set_move_forward_common_config_defaults(void)
+{
+    set_move_forward_common_config(create_default_move_forward_common_config());
+}
+
 struct rotate_control_config create_default_rotate_control_config(void)
 {
     struct rotate_control_config cfg = {0};
@@ -214,6 +228,7 @@ TEST_GROUP(NavigationTests)
         init_navigation();
         reset_encoder_mocks();
         reset_ir_mocks();
+        set_move_forward_common_config_defaults();
         set_move_forward_control_configs();
         set_rotation_control_config();
     }
@@ -333,6 +348,21 @@ TEST(NavigationTests, InitNavigationClearsMoveForwardCalculatedParams)
     MEMCMP_EQUAL(&expected, &both_wall, sizeof(expected));
 }
 
+TEST(NavigationTests, InitNavigationClearsMoveForwardCommonConfig)
+{
+    struct move_forward_common_config cfg{};
+    cfg.emergency_stop_threshold = 1234u;
+
+    set_move_forward_common_config(cfg);
+
+    init_navigation();
+
+    struct move_forward_common_config expected{};
+    struct move_forward_common_config actual{get_move_forward_common_config()};
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(expected));
+}
+
 TEST(NavigationTests, DeinitNavigationClearsNavigationParameters)
 {
     struct mouse_physical_params mouse{create_mouse_physical_params()};
@@ -417,6 +447,21 @@ TEST(NavigationTests, DeinitNavigationClearsMoveForwardCalculatedParams)
     MEMCMP_EQUAL(&expected, &no_wall, sizeof(expected));
     MEMCMP_EQUAL(&expected, &one_wall, sizeof(expected));
     MEMCMP_EQUAL(&expected, &both_wall, sizeof(expected));
+}
+
+TEST(NavigationTests, DeinitNavigationClearsMoveForwardCommonConfig)
+{
+    struct move_forward_common_config cfg{};
+    cfg.emergency_stop_threshold = 1234u;
+
+    set_move_forward_common_config(cfg);
+
+    deinit_navigation();
+
+    struct move_forward_common_config expected{};
+    struct move_forward_common_config actual{get_move_forward_common_config()};
+
+    MEMCMP_EQUAL(&expected, &actual, sizeof(expected));
 }
 
 TEST(NavigationTests, CalculateMouseParamsStoresPhysicalParameters)
@@ -805,6 +850,87 @@ TEST(NavigationTests, SetMoveForwardControlConfigFunctionsCalculateDriftTicks)
     LONGS_EQUAL(18, get_no_wall_move_forward_calculated_params().drift_ticks);
     LONGS_EQUAL(18, get_one_wall_move_forward_calculated_params().drift_ticks);
     LONGS_EQUAL(18, get_both_wall_move_forward_calculated_params().drift_ticks);
+}
+
+TEST(NavigationTests, EmergencyStopDisabledReturnsFalse)
+{
+    struct move_forward_common_config cfg{};
+    cfg.emergency_stop_threshold = 0u;
+
+    set_move_forward_common_config(cfg);
+
+    fake_ir_1_reading_value = 500;
+    fake_ir_4_reading_value = 500;
+
+    CHECK_FALSE(emergency_stop_detected());
+}
+
+TEST(NavigationTests, EmergencyStopBelowThresholdReturnsFalse)
+{
+    struct move_forward_common_config cfg{};
+    cfg.emergency_stop_threshold = 1000u;
+
+    set_move_forward_common_config(cfg);
+
+    fake_ir_1_reading_value = 900;
+    fake_ir_4_reading_value = 900;
+
+    CHECK_FALSE(emergency_stop_detected());
+}
+
+TEST(NavigationTests, EmergencyStopAtThresholdReturnsTrue)
+{
+    struct move_forward_common_config cfg{};
+    cfg.emergency_stop_threshold = 1000u;
+
+    set_move_forward_common_config(cfg);
+
+    fake_ir_1_reading_value = 1000;
+    fake_ir_4_reading_value = 1000;
+
+    CHECK_TRUE(emergency_stop_detected());
+}
+
+TEST(NavigationTests, EmergencyStopAboveThresholdReturnsTrue)
+{
+    struct move_forward_common_config cfg{};
+    cfg.emergency_stop_threshold = 1000u;
+
+    set_move_forward_common_config(cfg);
+
+    fake_ir_1_reading_value = 1200;
+    fake_ir_4_reading_value = 1300;
+
+    CHECK_TRUE(emergency_stop_detected());
+}
+
+TEST(NavigationTests, MoveForwardSetsEmergencyStopTelemetry)
+{
+    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
+    struct maze_physical_params maze_params{create_maze_physical_params()};
+
+    calculate_mouse_params(mouse_params);
+    calculate_maze_params(maze_params);
+    calculate_navigation_params();
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    struct move_forward_common_config cfg{};
+    cfg.emergency_stop_threshold = 1000u;
+
+    set_move_forward_common_config(cfg);
+
+    fake_ir_1_reading_value = 1500;
+    fake_ir_4_reading_value = 1500;
+
+    mock().ignoreOtherCalls();
+
+    move_forward_with_wall_mode(WALL_FEEDBACK_NONE, true);
+
+    struct move_forward_statistics stats{get_move_forward_statistics()};
+
+    CHECK_TRUE(stats.emergency_stop_occurred);
 }
 
 /*----------------------------------------------------------------------------*/
