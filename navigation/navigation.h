@@ -151,8 +151,6 @@ struct side_wall_detector {
     uint32_t prev_right_reading;
     bool left_first_change_recorded;
     bool right_first_change_recorded;
-    bool left_wall_present_on_first_change;
-    bool right_wall_present_on_first_change;
     bool left_wall_currently_present;
     bool right_wall_currently_present;
 

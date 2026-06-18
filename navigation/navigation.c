@@ -715,38 +715,26 @@ void update_side_wall_detector(struct side_wall_detector *detector,
         if (left_reading > detector->prev_left_reading) {
             if ((left_reading - detector->prev_left_reading)
                 >= side_wall_detection_config.slope_threshold) {
-                if (!detector->left_first_change_recorded) {
-                    detector->left_wall_present_on_first_change = true;
-                    detector->left_first_change_recorded = true;
-                }
+                detector->left_first_change_recorded = true;
                 detector->left_wall_currently_present = true;
             }
         } else {
             if ((detector->prev_left_reading - left_reading)
                 >= side_wall_detection_config.slope_threshold) {
-                if (!detector->left_first_change_recorded) {
-                    detector->left_wall_present_on_first_change = false;
-                    detector->left_first_change_recorded = true;
-                }
+                detector->left_first_change_recorded = true;
                 detector->left_wall_currently_present = false;
             }
         }
         if (right_reading > detector->prev_right_reading) {
             if ((right_reading - detector->prev_right_reading)
                 >= side_wall_detection_config.slope_threshold) {
-                if (!detector->right_first_change_recorded) {
-                    detector->right_wall_present_on_first_change = true;
-                    detector->right_first_change_recorded = true;
-                }
+                detector->right_first_change_recorded = true;
                 detector->right_wall_currently_present = true;
             }
         } else {
             if ((detector->prev_right_reading - right_reading)
                 >= side_wall_detection_config.slope_threshold) {
-                if (!detector->right_first_change_recorded) {
-                    detector->right_wall_present_on_first_change = false;
-                    detector->right_first_change_recorded = true;
-                }
+                detector->right_first_change_recorded = true;
                 detector->right_wall_currently_present = false;
             }
         }
@@ -800,11 +788,11 @@ bool determine_wall_presence(const struct side_wall_detector *detector,
 
     if (left_presence_requested) {
         first_change_recorded = detector->left_first_change_recorded;
-        wall_present = detector->left_wall_present_on_first_change;
+        wall_present = detector->left_wall_currently_present;
         sum = detector->left_sum;
     } else {
         first_change_recorded = detector->right_first_change_recorded;
-        wall_present = detector->right_wall_present_on_first_change;
+        wall_present = detector->right_wall_currently_present;
         sum = detector->right_sum;
     }
 

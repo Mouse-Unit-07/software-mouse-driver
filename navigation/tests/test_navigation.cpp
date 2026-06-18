@@ -1225,8 +1225,6 @@ TEST(NavigationTests, InitSideWallDetectorClearsDetector)
     detector.prev_right_reading = 456;
     detector.left_first_change_recorded = true;
     detector.right_first_change_recorded = true;
-    detector.left_wall_present_on_first_change = true;
-    detector.right_wall_present_on_first_change = true;
     detector.left_wall_currently_present = true;
     detector.right_wall_currently_present = true;
     detector.left_sum = 100;
@@ -1384,7 +1382,6 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
     update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.left_first_change_recorded);
-    CHECK(detector.left_wall_present_on_first_change);
     CHECK(detector.left_wall_currently_present);
 }
 
@@ -1406,7 +1403,6 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
     update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.right_first_change_recorded);
-    CHECK(detector.right_wall_present_on_first_change);
     CHECK(detector.right_wall_currently_present);
 }
 
@@ -1428,7 +1424,6 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
     update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.left_first_change_recorded);
-    CHECK_FALSE(detector.left_wall_present_on_first_change);
     CHECK_FALSE(detector.left_wall_currently_present);
 }
 
@@ -1450,7 +1445,6 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
     update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.right_first_change_recorded);
-    CHECK_FALSE(detector.right_wall_present_on_first_change);
     CHECK_FALSE(detector.right_wall_currently_present);
 }
 
@@ -1519,26 +1513,22 @@ TEST(NavigationTests, DetermineWallModeUsesCurrentWallStateAfterTransition)
     CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_LEFT);
 }
 
-TEST(NavigationTests, DetermineWallPresenceReturnsWallStateAtFirstTransition)
+TEST(NavigationTests, DetermineWallPresenceReturnsCurrentStateAfterTransition)
 {
     struct side_wall_detector detector{};
 
     detector.left_first_change_recorded = true;
-    detector.left_wall_present_on_first_change = true;
-
-    detector.left_wall_currently_present = false;
+    detector.left_wall_currently_present = true;
 
     CHECK(determine_wall_presence(&detector, true));
 }
 
-TEST(NavigationTests, DetermineWallPresenceReturnsNoWallStateAtFirstTransition)
+TEST(NavigationTests, DetermineWallPresenceReturnsCurrentNoWallStateAfterTransition)
 {
     struct side_wall_detector detector{};
 
     detector.left_first_change_recorded = true;
-    detector.left_wall_present_on_first_change = false;
-
-    detector.left_wall_currently_present = true;
+    detector.left_wall_currently_present = false;
 
     CHECK_FALSE(determine_wall_presence(&detector, true));
 }
