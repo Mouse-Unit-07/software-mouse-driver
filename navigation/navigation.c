@@ -428,6 +428,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 {
     struct move_forward_state state = {0};
     struct side_wall_detector detector = {0};
+    struct side_wall_readings readings = {0};
 
     init_move_forward_state(&state);
     init_side_wall_detector(&detector);
@@ -449,7 +450,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
             break;
         }
 
-        update_side_wall_detector(&detector);
+        update_side_wall_detector(&detector, &readings);
 
         enum wall_feedback_mode mode = initial_mode;
         if (!avoid_mode_switching) {
@@ -471,7 +472,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
         }
 
         struct move_forward_errors errors =
-            calculate_move_forward_errors(&state, mode, cfg.wall_target);
+            calculate_move_forward_errors(&state, mode, cfg.wall_target, &readings);
         struct motor_output output = calculate_move_forward_motor_output(errors, cfg);
 
         apply_motor_output(output);
@@ -496,7 +497,8 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
                                                          enum wall_feedback_mode wall_mode,
-                                                         uint32_t wall_target)
+                                                         uint32_t wall_target,
+                                                         struct side_wall_readings const *readings)
 {
     struct move_forward_errors errors = {0};
 
@@ -519,9 +521,8 @@ struct move_forward_errors calculate_move_forward_errors(struct move_forward_sta
     state->prev_angle_error = errors.angle_error;
 
     if (wall_mode != WALL_FEEDBACK_NONE) {
-
-        int32_t ir_2 = (int32_t)read_ir_2_sensor();
-        int32_t ir_3 = (int32_t)read_ir_3_sensor();
+        int32_t ir_2 = (int32_t)readings->left;
+        int32_t ir_3 = (int32_t)readings->right;
 
         int32_t target_ir = (int32_t)wall_target;
 
@@ -691,13 +692,17 @@ void init_side_wall_detector(struct side_wall_detector *detector)
     memset(detector, 0, sizeof(*detector));
 }
 
-void update_side_wall_detector(struct side_wall_detector *detector)
+void update_side_wall_detector(struct side_wall_detector *detector,
+                               struct side_wall_readings *readings)
 {
     uint32_t current_step =
         (uint32_t)((abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2);
     uint32_t start_step = side_wall_calculated_params.reading_start_offset_ticks;
     uint32_t left_reading = read_ir_2_sensor();
     uint32_t right_reading = read_ir_3_sensor();
+
+    readings->left = left_reading;
+    readings->right = right_reading;
 
     if ((current_step >= start_step)
         && (detector->samples_collected < side_wall_detection_config.num_detection_samples)) {
