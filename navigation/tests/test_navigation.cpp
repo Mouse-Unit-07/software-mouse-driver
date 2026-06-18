@@ -217,6 +217,15 @@ struct mouse_physical_params create_mouse_physical_params(void)
     return params;
 }
 
+struct side_wall_readings get_side_wall_readings(void)
+{
+    struct side_wall_readings readings{0u};
+    readings.left = fake_ir_2_reading_value;
+    readings.right = fake_ir_3_reading_value;
+
+    return readings;
+}
+
 /*============================================================================*/
 /*                                 Test Group                                 */
 /*============================================================================*/
@@ -608,8 +617,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityError)
     fake_encoder_1_ticks = 100;
     fake_encoder_2_ticks = 120;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.velocity_error == 20);
 }
@@ -622,8 +633,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityDerivative)
     fake_encoder_1_ticks = 100;
     fake_encoder_2_ticks = 130;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.velocity_error == 30);
     CHECK(errors.velocity_derivative == 20);
@@ -636,8 +649,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleError)
     fake_encoder_1_ticks = 50;
     fake_encoder_2_ticks = 80;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.angle_error == 30);
 }
@@ -650,8 +665,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleDerivative)
     fake_encoder_1_ticks = 10;
     fake_encoder_2_ticks = 40;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.angle_error == 30);
     CHECK(errors.angle_derivative == 25);
@@ -664,7 +681,9 @@ TEST(NavigationTests, CalculateMoveForwardErrorsUpdatesState)
     fake_encoder_1_ticks = 70;
     fake_encoder_2_ticks = 90;
 
-    calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u);
+    struct side_wall_readings readings{get_side_wall_readings()};
+
+    calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings);
 
     CHECK(state.prev_enc_1_ticks == 70);
     CHECK(state.prev_enc_2_ticks == 90);
@@ -679,8 +698,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsLeftWallModeCalculatesIrError)
 
     fake_ir_2_reading_value = 450;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u, &readings)};
 
     LONGS_EQUAL(-50, errors.ir_error);
 }
@@ -691,8 +712,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsRightWallModeCalculatesIrError)
 
     fake_ir_3_reading_value = 450;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_RIGHT, 500u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_RIGHT, 500u, &readings)};
 
     LONGS_EQUAL(50, errors.ir_error);
 }
@@ -704,8 +727,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsBothWallModeCalculatesIrError)
     fake_ir_2_reading_value = 400;
     fake_ir_3_reading_value = 550;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_BOTH, 0u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_BOTH, 0u, &readings)};
 
     LONGS_EQUAL(-150, errors.ir_error);
 }
@@ -717,8 +742,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesIrDerivative)
 
     fake_ir_2_reading_value = 450;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u, &readings)};
 
     LONGS_EQUAL(-50, errors.ir_error);
     LONGS_EQUAL(-60, errors.ir_derivative);
@@ -731,8 +758,10 @@ TEST(NavigationTests, CalculateMoveForwardErrorsNoWallModeLeavesIrErrorZero)
     fake_ir_2_reading_value = 1000;
     fake_ir_3_reading_value = 1000;
 
+    struct side_wall_readings readings{get_side_wall_readings()};
+
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u)};
+        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.ir_error == 0);
     CHECK(errors.ir_derivative == 0);
@@ -1196,8 +1225,6 @@ TEST(NavigationTests, InitSideWallDetectorClearsDetector)
     detector.prev_right_reading = 456;
     detector.left_first_change_recorded = true;
     detector.right_first_change_recorded = true;
-    detector.left_wall_present_on_first_change = true;
-    detector.right_wall_present_on_first_change = true;
     detector.left_wall_currently_present = true;
     detector.right_wall_currently_present = true;
     detector.left_sum = 100;
@@ -1264,7 +1291,8 @@ TEST(NavigationTests, UpdateSideWallDetectorDoesNotCollectSamplesBeforeOffset)
     fake_ir_3_reading_value = 500;
 
     struct side_wall_detector detector{};
-    update_side_wall_detector(&detector);
+    struct side_wall_readings readings{};
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.samples_collected == 0u);
 }
@@ -1282,7 +1310,8 @@ TEST(NavigationTests, UpdateSideWallDetectorCollectsSamplesAfterOffset)
     fake_ir_2_reading_value = 400;
     fake_ir_3_reading_value = 500;
 
-    update_side_wall_detector(&detector);
+    struct side_wall_readings readings{};
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.samples_collected == 1u);
     CHECK(detector.left_sum == 400u);
@@ -1301,9 +1330,10 @@ TEST(NavigationTests, UpdateSideWallDetectorStopsCollectingAfterMaximumSamples)
     fake_ir_2_reading_value = 100;
     fake_ir_3_reading_value = 200;
 
-    update_side_wall_detector(&detector);
-    update_side_wall_detector(&detector);
-    update_side_wall_detector(&detector);
+    struct side_wall_readings readings{};
+    update_side_wall_detector(&detector, &readings);
+    update_side_wall_detector(&detector, &readings);
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.samples_collected == 2u);
     CHECK(detector.left_sum == 200u);
@@ -1322,7 +1352,8 @@ TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues
     fake_ir_2_reading_value = 500;
     fake_ir_3_reading_value = 600;
 
-    update_side_wall_detector(&detector);
+    struct side_wall_readings readings{};
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.have_previous_reading);
 
@@ -1335,6 +1366,10 @@ TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1342,19 +1377,24 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
 
     set_side_wall_detection_config(cfg);
 
+    struct side_wall_readings readings{};
+
     fake_ir_2_reading_value = 100;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     fake_ir_2_reading_value = 200;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.left_first_change_recorded);
-    CHECK(detector.left_wall_present_on_first_change);
     CHECK(detector.left_wall_currently_present);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1362,19 +1402,24 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
 
     set_side_wall_detection_config(cfg);
 
+    struct side_wall_readings readings{};
+
     fake_ir_3_reading_value = 100;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     fake_ir_3_reading_value = 200;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.right_first_change_recorded);
-    CHECK(detector.right_wall_present_on_first_change);
     CHECK(detector.right_wall_currently_present);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1382,19 +1427,24 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
 
     set_side_wall_detection_config(cfg);
 
+    struct side_wall_readings readings{};
+
     fake_ir_2_reading_value = 300;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     fake_ir_2_reading_value = 100;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.left_first_change_recorded);
-    CHECK_FALSE(detector.left_wall_present_on_first_change);
     CHECK_FALSE(detector.left_wall_currently_present);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1402,14 +1452,15 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
 
     set_side_wall_detection_config(cfg);
 
+    struct side_wall_readings readings{};
+
     fake_ir_3_reading_value = 300;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     fake_ir_3_reading_value = 100;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.right_first_change_recorded);
-    CHECK_FALSE(detector.right_wall_present_on_first_change);
     CHECK_FALSE(detector.right_wall_currently_present);
 }
 
@@ -1422,11 +1473,13 @@ TEST(NavigationTests, UpdateSideWallDetectorIgnoresChangesBelowSlopeThreshold)
 
     set_side_wall_detection_config(cfg);
 
+    struct side_wall_readings readings{};
+
     fake_ir_2_reading_value = 500;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     fake_ir_2_reading_value = 550;
-    update_side_wall_detector(&detector);
+    update_side_wall_detector(&detector, &readings);
 
     CHECK_FALSE(detector.left_first_change_recorded);
 }
@@ -1476,26 +1529,22 @@ TEST(NavigationTests, DetermineWallModeUsesCurrentWallStateAfterTransition)
     CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_LEFT);
 }
 
-TEST(NavigationTests, DetermineWallPresenceReturnsWallStateAtFirstTransition)
+TEST(NavigationTests, DetermineWallPresenceReturnsCurrentStateAfterTransition)
 {
     struct side_wall_detector detector{};
 
     detector.left_first_change_recorded = true;
-    detector.left_wall_present_on_first_change = true;
-
-    detector.left_wall_currently_present = false;
+    detector.left_wall_currently_present = true;
 
     CHECK(determine_wall_presence(&detector, true));
 }
 
-TEST(NavigationTests, DetermineWallPresenceReturnsNoWallStateAtFirstTransition)
+TEST(NavigationTests, DetermineWallPresenceReturnsCurrentNoWallStateAfterTransition)
 {
     struct side_wall_detector detector{};
 
     detector.left_first_change_recorded = true;
-    detector.left_wall_present_on_first_change = false;
-
-    detector.left_wall_currently_present = true;
+    detector.left_wall_currently_present = false;
 
     CHECK_FALSE(determine_wall_presence(&detector, true));
 }
@@ -1520,6 +1569,34 @@ TEST(NavigationTests, DetermineWallPresenceReturnsFalseWhenNoSamplesCollected)
     struct side_wall_detector detector{};
 
     CHECK_FALSE(determine_wall_presence(&detector, true));
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEightyPercentOfCell)
+{
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+
+    set_side_wall_detection_config(cfg);
+
+    struct navigation_params nav{get_navigation_params()};
+
+    fake_encoder_1_ticks = (nav.move_forward_one_cell_target_ticks * 85) / 100;
+    fake_encoder_2_ticks = (nav.move_forward_one_cell_target_ticks * 85) / 100;
+
+    struct side_wall_detector detector{};
+    struct side_wall_readings readings{};
+
+    fake_ir_2_reading_value = 100;
+    update_side_wall_detector(&detector, &readings);
+
+    fake_ir_2_reading_value = 300;
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_FALSE(detector.left_first_change_recorded);
 }
 
 /*----------------------------------------------------------------------------*/

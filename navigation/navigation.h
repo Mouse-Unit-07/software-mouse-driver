@@ -151,14 +151,17 @@ struct side_wall_detector {
     uint32_t prev_right_reading;
     bool left_first_change_recorded;
     bool right_first_change_recorded;
-    bool left_wall_present_on_first_change;
-    bool right_wall_present_on_first_change;
     bool left_wall_currently_present;
     bool right_wall_currently_present;
 
     uint64_t left_sum;
     uint64_t right_sum;
     uint32_t samples_collected;
+};
+
+struct side_wall_readings {
+    uint32_t left;
+    uint32_t right;
 };
 
 /*----------------------------------------------------------------------------*/
@@ -228,7 +231,8 @@ bool emergency_stop_detected(void);
 void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoid_mode_switching);
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
                                                          enum wall_feedback_mode wall_mode,
-                                                         uint32_t wall_target);
+                                                         uint32_t wall_target,
+                                                         struct side_wall_readings const *readings);
 struct motor_output calculate_move_forward_motor_output(struct move_forward_errors errors,
                                                         struct move_forward_control_config cfg);
 void reset_move_forward_error_history(struct move_forward_state *state);
@@ -260,7 +264,8 @@ struct side_wall_calculated_params get_side_wall_calculated_params(void);
 
 /* helpers exposed for testing */
 void init_side_wall_detector(struct side_wall_detector *detector);
-void update_side_wall_detector(struct side_wall_detector *detector);
+void update_side_wall_detector(struct side_wall_detector *detector,
+                               struct side_wall_readings *readings);
 enum wall_feedback_mode determine_wall_mode(const struct side_wall_detector *detector);
 bool determine_wall_presence(const struct side_wall_detector *detector,
                              bool left_presence_requested);
