@@ -1366,6 +1366,10 @@ TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1387,6 +1391,10 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1408,6 +1416,10 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1429,6 +1441,10 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
 {
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
@@ -1553,6 +1569,34 @@ TEST(NavigationTests, DetermineWallPresenceReturnsFalseWhenNoSamplesCollected)
     struct side_wall_detector detector{};
 
     CHECK_FALSE(determine_wall_presence(&detector, true));
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEightyPercentOfCell)
+{
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+
+    set_side_wall_detection_config(cfg);
+
+    struct navigation_params nav{get_navigation_params()};
+
+    fake_encoder_1_ticks = (nav.move_forward_one_cell_target_ticks * 85) / 100;
+    fake_encoder_2_ticks = (nav.move_forward_one_cell_target_ticks * 85) / 100;
+
+    struct side_wall_detector detector{};
+    struct side_wall_readings readings{};
+
+    fake_ir_2_reading_value = 100;
+    update_side_wall_detector(&detector, &readings);
+
+    fake_ir_2_reading_value = 300;
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_FALSE(detector.left_first_change_recorded);
 }
 
 /*----------------------------------------------------------------------------*/

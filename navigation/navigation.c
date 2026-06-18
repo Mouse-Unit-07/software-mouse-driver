@@ -32,7 +32,8 @@ static uint32_t round_positive_to_uint32(double value);
 
 static void reset_navigation_state(void);
 static int32_t calculate_move_forward_drift_ticks(struct move_forward_control_config cfg);
-static struct move_forward_calculated_params get_move_forward_calculated_params(enum wall_feedback_mode mode);
+static struct move_forward_calculated_params
+get_move_forward_calculated_params(enum wall_feedback_mode mode);
 static void calculate_side_wall_params(void);
 
 /*----------------------------------------------------------------------------*/
@@ -397,7 +398,8 @@ void init_move_forward_state(struct move_forward_state *state)
     set_wheel_motor_2_direction_forward();
 }
 
-static struct move_forward_calculated_params get_move_forward_calculated_params(enum wall_feedback_mode mode)
+static struct move_forward_calculated_params
+get_move_forward_calculated_params(enum wall_feedback_mode mode)
 {
     if (mode == WALL_FEEDBACK_NONE) {
         return no_wall_move_forward_calculated_params;
@@ -711,31 +713,37 @@ void update_side_wall_detector(struct side_wall_detector *detector,
         detector->samples_collected++;
     }
 
-    if (detector->have_previous_reading) {
-        if (left_reading > detector->prev_left_reading) {
-            if ((left_reading - detector->prev_left_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->left_first_change_recorded = true;
-                detector->left_wall_currently_present = true;
+    /* TODO: make this end step configurable w/ commands */
+    uint32_t end_slope_detection_step =
+        (navigation_params.move_forward_one_cell_target_ticks * 8) / 10;
+
+    if (current_step < end_slope_detection_step) {
+        if (detector->have_previous_reading) {
+            if (left_reading > detector->prev_left_reading) {
+                if ((left_reading - detector->prev_left_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->left_first_change_recorded = true;
+                    detector->left_wall_currently_present = true;
+                }
+            } else {
+                if ((detector->prev_left_reading - left_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->left_first_change_recorded = true;
+                    detector->left_wall_currently_present = false;
+                }
             }
-        } else {
-            if ((detector->prev_left_reading - left_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->left_first_change_recorded = true;
-                detector->left_wall_currently_present = false;
-            }
-        }
-        if (right_reading > detector->prev_right_reading) {
-            if ((right_reading - detector->prev_right_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->right_first_change_recorded = true;
-                detector->right_wall_currently_present = true;
-            }
-        } else {
-            if ((detector->prev_right_reading - right_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->right_first_change_recorded = true;
-                detector->right_wall_currently_present = false;
+            if (right_reading > detector->prev_right_reading) {
+                if ((right_reading - detector->prev_right_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->right_first_change_recorded = true;
+                    detector->right_wall_currently_present = true;
+                }
+            } else {
+                if ((detector->prev_right_reading - right_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->right_first_change_recorded = true;
+                    detector->right_wall_currently_present = false;
+                }
             }
         }
     }
