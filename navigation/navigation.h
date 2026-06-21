@@ -212,6 +212,7 @@ void stop_motors(void);
 /*----------------------------------------------------------------------------*/
 /* move forward */
 void move_forward(void);
+uint32_t move_forward_until_turn_or_intersection_and_return_steps(void);
 
 void set_move_forward_common_config(struct move_forward_common_config cfg);
 struct move_forward_common_config get_move_forward_common_config(void);
@@ -228,6 +229,7 @@ struct move_forward_calculated_params get_both_wall_move_forward_calculated_para
 /* helpers exposed for testing */
 void init_move_forward_state(struct move_forward_state *state);
 bool emergency_stop_detected(void);
+bool should_continue_straight(void);
 void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoid_mode_switching);
 struct move_forward_errors calculate_move_forward_errors(struct move_forward_state *state,
                                                          enum wall_feedback_mode wall_mode,
