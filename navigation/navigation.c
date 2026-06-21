@@ -212,6 +212,18 @@ void move_forward(void)
     move_forward_with_wall_mode(WALL_FEEDBACK_NONE, false);
 }
 
+uint32_t move_forward_until_turn_or_intersection_and_return_steps(void)
+{
+    uint32_t steps = 0u;
+
+    do {
+        move_forward_with_wall_mode(WALL_FEEDBACK_NONE, false);
+        steps++;
+    } while (should_continue_straight());
+
+    return steps;
+}
+
 /*----------------------------------------------------------------------------*/
 /* rotation */
 void set_rotate_control_config(struct rotate_control_config cfg)
@@ -424,6 +436,27 @@ bool emergency_stop_detected(void)
     uint32_t average = (read_ir_1_sensor() + read_ir_4_sensor()) / 2u;
 
     return average >= threshold;
+}
+
+bool should_continue_straight(void)
+{
+    bool left_wall = is_left_wall_present();
+    bool front_wall = is_front_wall_present();
+    bool right_wall = is_right_wall_present();
+
+    if (front_wall) {
+        return false;
+    }
+
+    if (!left_wall) {
+        return false;
+    }
+
+    if (!right_wall) {
+        return false;
+    }
+
+    return true;
 }
 
 void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoid_mode_switching)

@@ -226,6 +226,13 @@ struct side_wall_readings get_side_wall_readings(void)
     return readings;
 }
 
+void init_mouse_and_maze_params(void)
+{
+    calculate_mouse_params(create_mouse_physical_params());
+    calculate_maze_params(create_maze_physical_params());
+    calculate_navigation_params();
+}
+
 /*============================================================================*/
 /*                                 Test Group                                 */
 /*============================================================================*/
@@ -255,12 +262,7 @@ TEST_GROUP(NavigationTests)
 /*============================================================================*/
 TEST(NavigationTests, InitNavigationClearsNavigationParameters)
 {
-    struct mouse_physical_params mouse{create_mouse_physical_params()};
-    struct maze_physical_params maze{create_maze_physical_params()};
-
-    calculate_mouse_params(mouse);
-    calculate_maze_params(maze);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     init_navigation();
 
@@ -374,12 +376,7 @@ TEST(NavigationTests, InitNavigationClearsMoveForwardCommonConfig)
 
 TEST(NavigationTests, DeinitNavigationClearsNavigationParameters)
 {
-    struct mouse_physical_params mouse{create_mouse_physical_params()};
-    struct maze_physical_params maze{create_maze_physical_params()};
-
-    calculate_mouse_params(mouse);
-    calculate_maze_params(maze);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     deinit_navigation();
 
@@ -519,12 +516,7 @@ TEST(NavigationTests, CalculateMazeParamsCalculatesCellSize)
 
 TEST(NavigationTests, CalculateNavigationParamsCalculatesTargets)
 {
-    struct mouse_physical_params mouse{create_mouse_physical_params()};
-    struct maze_physical_params maze{create_maze_physical_params()};
-
-    calculate_mouse_params(mouse);
-    calculate_maze_params(maze);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct navigation_params nav = get_navigation_params();
 
@@ -845,12 +837,7 @@ TEST(NavigationTests, ResetMoveForwardErrorHistoryClearsDerivativeState)
 
 TEST(NavigationTests, MoveForwardStopsMotorsWhenMaxStepsExceeded)
 {
-    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
-    struct maze_physical_params maze_params{create_maze_physical_params()};
-
-    calculate_mouse_params(mouse_params);
-    calculate_maze_params(maze_params);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     /* encoder ticks never change */
     fake_encoder_1_ticks = 0;
@@ -933,14 +920,171 @@ TEST(NavigationTests, EmergencyStopAboveThresholdReturnsTrue)
     CHECK_TRUE(emergency_stop_detected());
 }
 
+TEST(NavigationTests, ShouldContinueStraightReturnsTrueInCorridor)
+{
+    init_mouse_and_maze_params();
+
+    struct front_wall_detection_config front_cfg{};
+    front_cfg.num_detection_samples = 1;
+    front_cfg.reading_threshold = 500u;
+    set_front_wall_detection_config(front_cfg);
+
+    struct side_wall_detection_config side_cfg{};
+    side_cfg.reading_threshold = 200;
+    side_cfg.slope_threshold = 100;
+    side_cfg.num_detection_samples = 10;
+    side_cfg.reading_start_offset = 0.0;
+    set_side_wall_detection_config(side_cfg);
+
+    fake_encoder_1_ticks = 500;
+    fake_encoder_2_ticks = 500;
+    fake_ir_1_reading_value = 0;
+    fake_ir_2_reading_value = 300;
+    fake_ir_3_reading_value = 300;
+    fake_ir_4_reading_value = 0;
+
+    mock().ignoreOtherCalls();
+    move_forward();
+
+    CHECK_FALSE(is_front_wall_present());
+    CHECK_TRUE(is_left_wall_present());
+    CHECK_TRUE(is_right_wall_present());
+
+    CHECK_TRUE(should_continue_straight());
+}
+
+TEST(NavigationTests, ShouldContinueStraightReturnsFalseWhenFrontWallPresent)
+{
+    init_mouse_and_maze_params();
+
+    struct front_wall_detection_config front_cfg{};
+    front_cfg.num_detection_samples = 1;
+    front_cfg.reading_threshold = 500u;
+    set_front_wall_detection_config(front_cfg);
+
+    struct side_wall_detection_config side_cfg{};
+    side_cfg.reading_threshold = 200;
+    side_cfg.slope_threshold = 100;
+    side_cfg.num_detection_samples = 10;
+    side_cfg.reading_start_offset = 0.0;
+    set_side_wall_detection_config(side_cfg);
+
+    fake_encoder_1_ticks = 500;
+    fake_encoder_2_ticks = 500;
+    fake_ir_1_reading_value = 600;
+    fake_ir_2_reading_value = 300;
+    fake_ir_3_reading_value = 300;
+    fake_ir_4_reading_value = 600;
+
+    mock().ignoreOtherCalls();
+    move_forward();
+
+    CHECK_TRUE(is_front_wall_present());
+    CHECK_TRUE(is_left_wall_present());
+    CHECK_TRUE(is_right_wall_present());
+
+    CHECK_FALSE(should_continue_straight());
+}
+
+TEST(NavigationTests, ShouldContinueStraightReturnsFalseWhenLeftOpeningExists)
+{
+    init_mouse_and_maze_params();
+
+    struct front_wall_detection_config front_cfg{};
+    front_cfg.num_detection_samples = 1;
+    front_cfg.reading_threshold = 500u;
+    set_front_wall_detection_config(front_cfg);
+
+    struct side_wall_detection_config side_cfg{};
+    side_cfg.reading_threshold = 200;
+    side_cfg.slope_threshold = 100;
+    side_cfg.num_detection_samples = 10;
+    side_cfg.reading_start_offset = 0.0;
+    set_side_wall_detection_config(side_cfg);
+
+    fake_encoder_1_ticks = 500;
+    fake_encoder_2_ticks = 500;
+    fake_ir_1_reading_value = 0;
+    fake_ir_2_reading_value = 0;
+    fake_ir_3_reading_value = 300;
+    fake_ir_4_reading_value = 0;
+
+    mock().ignoreOtherCalls();
+    move_forward();
+
+    CHECK_FALSE(is_front_wall_present());
+    CHECK_FALSE(is_left_wall_present());
+    CHECK_TRUE(is_right_wall_present());
+
+    CHECK_FALSE(should_continue_straight());
+}
+
+TEST(NavigationTests, ShouldContinueStraightReturnsFalseWhenRightOpeningExists)
+{
+    init_mouse_and_maze_params();
+
+    struct front_wall_detection_config front_cfg{};
+    front_cfg.num_detection_samples = 1;
+    front_cfg.reading_threshold = 500u;
+    set_front_wall_detection_config(front_cfg);
+
+    struct side_wall_detection_config side_cfg{};
+    side_cfg.reading_threshold = 200;
+    side_cfg.slope_threshold = 100;
+    side_cfg.num_detection_samples = 10;
+    side_cfg.reading_start_offset = 0.0;
+    set_side_wall_detection_config(side_cfg);
+
+    fake_encoder_1_ticks = 500;
+    fake_encoder_2_ticks = 500;
+    fake_ir_1_reading_value = 0;
+    fake_ir_2_reading_value = 300;
+    fake_ir_3_reading_value = 0;
+    fake_ir_4_reading_value = 0;
+
+    mock().ignoreOtherCalls();
+    move_forward();
+
+    CHECK_FALSE(is_front_wall_present());
+    CHECK_TRUE(is_left_wall_present());
+    CHECK_FALSE(is_right_wall_present());
+
+    CHECK_FALSE(should_continue_straight());
+}
+
+TEST(NavigationTests, MoveForwardUntilTurnOrIntersectionReturnsOneStepWhenImmediateIntersection)
+{
+    init_mouse_and_maze_params();
+
+    struct front_wall_detection_config front_cfg{};
+    front_cfg.num_detection_samples = 1;
+    front_cfg.reading_threshold = 500u;
+    set_front_wall_detection_config(front_cfg);
+
+    struct side_wall_detection_config side_cfg{};
+    side_cfg.reading_threshold = 200;
+    side_cfg.slope_threshold = 100;
+    side_cfg.num_detection_samples = 10;
+    side_cfg.reading_start_offset = 0.0;
+    set_side_wall_detection_config(side_cfg);
+
+    fake_encoder_1_ticks = 500;
+    fake_encoder_2_ticks = 500;
+    fake_ir_1_reading_value = 0;
+    fake_ir_2_reading_value = 0;
+    fake_ir_3_reading_value = 0;
+    fake_ir_4_reading_value = 0;
+
+    mock().ignoreOtherCalls();
+
+    uint32_t steps{move_forward_until_turn_or_intersection_and_return_steps()};
+
+    LONGS_EQUAL(1u, steps);
+}
+
 TEST(NavigationTests, MoveForwardSetsEmergencyStopTelemetry)
 {
-    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
-    struct maze_physical_params maze_params{create_maze_physical_params()};
-
-    calculate_mouse_params(mouse_params);
-    calculate_maze_params(maze_params);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
@@ -1255,9 +1399,7 @@ TEST(NavigationTests, SetSideWallDetectionConfigStoresConfiguration)
 
 TEST(NavigationTests, SetSideWallDetectionConfigCalculatesReadingStartOffsetTicks)
 {
-    calculate_mouse_params(create_mouse_physical_params());
-    calculate_maze_params(create_maze_physical_params());
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct side_wall_detection_config cfg{};
 
@@ -1272,11 +1414,7 @@ TEST(NavigationTests, SetSideWallDetectionConfigCalculatesReadingStartOffsetTick
 
 TEST(NavigationTests, UpdateSideWallDetectorDoesNotCollectSamplesBeforeOffset)
 {
-    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
-    struct maze_physical_params maze_params{create_maze_physical_params()};
-    calculate_mouse_params(mouse_params);
-    calculate_maze_params(maze_params);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct side_wall_detection_config cfg{};
     cfg.num_detection_samples = 10;
@@ -1366,9 +1504,7 @@ TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
 {
-    calculate_mouse_params(create_mouse_physical_params());
-    calculate_maze_params(create_maze_physical_params());
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct side_wall_detector detector{};
 
@@ -1391,9 +1527,7 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
 {
-    calculate_mouse_params(create_mouse_physical_params());
-    calculate_maze_params(create_maze_physical_params());
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct side_wall_detector detector{};
 
@@ -1416,9 +1550,7 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
 {
-    calculate_mouse_params(create_mouse_physical_params());
-    calculate_maze_params(create_maze_physical_params());
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct side_wall_detector detector{};
 
@@ -1441,9 +1573,7 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
 {
-    calculate_mouse_params(create_mouse_physical_params());
-    calculate_maze_params(create_maze_physical_params());
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct side_wall_detector detector{};
 
@@ -1573,9 +1703,7 @@ TEST(NavigationTests, DetermineWallPresenceReturnsFalseWhenNoSamplesCollected)
 
 TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEightyPercentOfCell)
 {
-    calculate_mouse_params(create_mouse_physical_params());
-    calculate_maze_params(create_maze_physical_params());
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     struct side_wall_detection_config cfg{};
     cfg.slope_threshold = 50;
@@ -1679,12 +1807,7 @@ TEST(NavigationTests, WallPresenceFlagsDefaultToFalse)
 /* telemetry */
 TEST(NavigationTests, MoveForwardSetsTimeoutFlagWhenMaxStepsExceeded)
 {
-    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
-    struct maze_physical_params maze_params{create_maze_physical_params()};
-
-    calculate_mouse_params(mouse_params);
-    calculate_maze_params(maze_params);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
@@ -1700,12 +1823,7 @@ TEST(NavigationTests, MoveForwardSetsTimeoutFlagWhenMaxStepsExceeded)
 
 TEST(NavigationTests, RotateSetsTimeoutFlagWhenMaxStepsExceeded)
 {
-    struct mouse_physical_params mouse_params{create_mouse_physical_params()};
-    struct maze_physical_params maze_params{create_maze_physical_params()};
-
-    calculate_mouse_params(mouse_params);
-    calculate_maze_params(maze_params);
-    calculate_navigation_params();
+    init_mouse_and_maze_params();
 
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
