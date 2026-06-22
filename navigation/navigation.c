@@ -730,52 +730,79 @@ void init_side_wall_detector(struct side_wall_detector *detector)
 void update_side_wall_detector(struct side_wall_detector *detector,
                                struct side_wall_readings *readings)
 {
-    uint32_t current_step =
-        (uint32_t)((abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2);
-    uint32_t start_step = side_wall_calculated_params.reading_start_offset_ticks;
     uint32_t left_reading = read_ir_2_sensor();
     uint32_t right_reading = read_ir_3_sensor();
-
     readings->left = left_reading;
     readings->right = right_reading;
 
+    uint32_t current_step =
+        (uint32_t)((abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2);
+    uint32_t start_step = side_wall_calculated_params.reading_start_offset_ticks;
+
+    /* sum accumulation and reading threshold check */
     if ((current_step >= start_step)
         && (detector->samples_collected < side_wall_detection_config.num_detection_samples)) {
         detector->left_sum += left_reading;
         detector->right_sum += right_reading;
         detector->samples_collected++;
+    } else if ((detector->samples_collected == side_wall_detection_config.num_detection_samples)
+               && (detector->samples_collected != 0u)) {
+        if (!(detector->left_sudden_change_recorded)) {
+            bool left_verdict = (detector->left_sum / detector->samples_collected)
+                                >= side_wall_detection_config.reading_threshold;
+            detector->left_wall_presence_final_verdict = left_verdict;
+            detector->left_wall_currently_present = left_verdict;
+        }
+        if (!(detector->right_sudden_change_recorded)) {
+            bool right_verdict = (detector->right_sum / detector->samples_collected)
+                                 >= side_wall_detection_config.reading_threshold;
+            detector->right_wall_presence_final_verdict = right_verdict;
+            detector->right_wall_currently_present = right_verdict;
+        }
+        detector->samples_collected++;
     }
 
     /* TODO: make this end step configurable w/ commands */
     uint32_t end_slope_detection_step =
-        (navigation_params.move_forward_one_cell_target_ticks * 8) / 10;
+        ((uint32_t)navigation_params.move_forward_one_cell_target_ticks * 90 + 50) / 100;
 
-    if (current_step < end_slope_detection_step) {
-        if (detector->have_previous_reading) {
-            if (left_reading > detector->prev_left_reading) {
-                if ((left_reading - detector->prev_left_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->left_first_change_recorded = true;
-                    detector->left_wall_currently_present = true;
-                }
-            } else {
-                if ((detector->prev_left_reading - left_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->left_first_change_recorded = true;
-                    detector->left_wall_currently_present = false;
+    /* slope threshold check */
+    if (detector->have_previous_reading) {
+        if (left_reading > detector->prev_left_reading) {
+            if ((left_reading - detector->prev_left_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                detector->left_sudden_change_recorded = true;
+                detector->left_wall_currently_present = true;
+                if (current_step < end_slope_detection_step) {
+                    detector->left_wall_presence_final_verdict = true;
                 }
             }
-            if (right_reading > detector->prev_right_reading) {
-                if ((right_reading - detector->prev_right_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->right_first_change_recorded = true;
-                    detector->right_wall_currently_present = true;
+        } else {
+            if ((detector->prev_left_reading - left_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                detector->left_sudden_change_recorded = true;
+                detector->left_wall_currently_present = false;
+                if (current_step < end_slope_detection_step) {
+                    detector->left_wall_presence_final_verdict = false;
                 }
-            } else {
-                if ((detector->prev_right_reading - right_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->right_first_change_recorded = true;
-                    detector->right_wall_currently_present = false;
+            }
+        }
+        if (right_reading > detector->prev_right_reading) {
+            if ((right_reading - detector->prev_right_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                detector->right_sudden_change_recorded = true;
+                detector->right_wall_currently_present = true;
+                if (current_step < end_slope_detection_step) {
+                    detector->right_wall_presence_final_verdict = true;
+                }
+            }
+        } else {
+            if ((detector->prev_right_reading - right_reading)
+                >= side_wall_detection_config.slope_threshold) {
+                detector->right_sudden_change_recorded = true;
+                detector->right_wall_currently_present = false;
+                if (current_step < end_slope_detection_step) {
+                    detector->right_wall_presence_final_verdict = false;
                 }
             }
         }
@@ -788,26 +815,8 @@ void update_side_wall_detector(struct side_wall_detector *detector,
 
 enum wall_feedback_mode determine_wall_mode(const struct side_wall_detector *detector)
 {
-    bool left_wall_currently_present = false;
-    bool right_wall_currently_present = false;
-
-    if (detector->left_first_change_recorded) {
-        left_wall_currently_present = detector->left_wall_currently_present;
-    } else if (detector->samples_collected == 0u) {
-        left_wall_currently_present = false;
-    } else {
-        left_wall_currently_present = (detector->left_sum / detector->samples_collected)
-                                      >= side_wall_detection_config.reading_threshold;
-    }
-
-    if (detector->right_first_change_recorded) {
-        right_wall_currently_present = detector->right_wall_currently_present;
-    } else if (detector->samples_collected == 0u) {
-        right_wall_currently_present = false;
-    } else {
-        right_wall_currently_present = (detector->right_sum / detector->samples_collected)
-                                       >= side_wall_detection_config.reading_threshold;
-    }
+    bool left_wall_currently_present = detector->left_wall_currently_present;
+    bool right_wall_currently_present = detector->right_wall_currently_present;
 
     if (left_wall_currently_present && right_wall_currently_present) {
         return WALL_FEEDBACK_BOTH;
@@ -823,27 +832,13 @@ enum wall_feedback_mode determine_wall_mode(const struct side_wall_detector *det
 bool determine_wall_presence(const struct side_wall_detector *detector,
                              bool left_presence_requested)
 {
-    bool first_change_recorded;
-    bool wall_present;
-    uint64_t sum;
+    bool wall_present = false;
 
     if (left_presence_requested) {
-        first_change_recorded = detector->left_first_change_recorded;
-        wall_present = detector->left_wall_currently_present;
-        sum = detector->left_sum;
+        wall_present = detector->left_wall_presence_final_verdict;
     } else {
-        first_change_recorded = detector->right_first_change_recorded;
-        wall_present = detector->right_wall_currently_present;
-        sum = detector->right_sum;
+        wall_present = detector->right_wall_presence_final_verdict;
     }
 
-    if (first_change_recorded) {
-        return wall_present;
-    }
-
-    if (detector->samples_collected == 0) {
-        return false;
-    }
-
-    return (sum / detector->samples_collected) >= side_wall_detection_config.reading_threshold;
+    return wall_present;
 }
