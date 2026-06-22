@@ -146,17 +146,18 @@ struct side_wall_calculated_params {
 
 /* helper structs exposed for testing */
 struct side_wall_detector {
-    bool have_previous_reading;
-    uint32_t prev_left_reading;
-    uint32_t prev_right_reading;
-    bool left_first_change_recorded;
-    bool right_first_change_recorded;
-    bool left_wall_currently_present;
-    bool right_wall_currently_present;
-
     uint64_t left_sum;
     uint64_t right_sum;
     uint32_t samples_collected;
+    uint32_t prev_left_reading;
+    uint32_t prev_right_reading;
+    bool have_previous_reading;
+    bool left_sudden_change_recorded;
+    bool left_wall_currently_present;
+    bool left_wall_presence_final_verdict;
+    bool right_sudden_change_recorded;
+    bool right_wall_currently_present;
+    bool right_wall_presence_final_verdict;
 };
 
 struct side_wall_readings {

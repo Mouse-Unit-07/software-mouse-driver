@@ -1367,8 +1367,10 @@ TEST(NavigationTests, InitSideWallDetectorClearsDetector)
     detector.have_previous_reading = true;
     detector.prev_left_reading = 123;
     detector.prev_right_reading = 456;
-    detector.left_first_change_recorded = true;
-    detector.right_first_change_recorded = true;
+    detector.left_sudden_change_recorded = true;
+    detector.right_sudden_change_recorded = true;
+    detector.left_wall_presence_final_verdict = true;
+    detector.right_wall_presence_final_verdict = true;
     detector.left_wall_currently_present = true;
     detector.right_wall_currently_present = true;
     detector.left_sum = 100;
@@ -1473,7 +1475,7 @@ TEST(NavigationTests, UpdateSideWallDetectorStopsCollectingAfterMaximumSamples)
     update_side_wall_detector(&detector, &readings);
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.samples_collected == 2u);
+    CHECK(detector.samples_collected == 3u);
     CHECK(detector.left_sum == 200u);
     CHECK(detector.right_sum == 400u);
 }
@@ -1495,8 +1497,8 @@ TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues
 
     CHECK(detector.have_previous_reading);
 
-    CHECK_FALSE(detector.left_first_change_recorded);
-    CHECK_FALSE(detector.right_first_change_recorded);
+    CHECK_FALSE(detector.left_sudden_change_recorded);
+    CHECK_FALSE(detector.right_sudden_change_recorded);
 
     CHECK(detector.prev_left_reading == 500u);
     CHECK(detector.prev_right_reading == 600u);
@@ -1521,8 +1523,9 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)
     fake_ir_2_reading_value = 200;
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.left_first_change_recorded);
+    CHECK(detector.left_sudden_change_recorded);
     CHECK(detector.left_wall_currently_present);
+    CHECK(detector.left_wall_presence_final_verdict);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
@@ -1544,8 +1547,9 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallAppearance)
     fake_ir_3_reading_value = 200;
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.right_first_change_recorded);
+    CHECK(detector.right_sudden_change_recorded);
     CHECK(detector.right_wall_currently_present);
+    CHECK(detector.right_wall_presence_final_verdict);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
@@ -1567,8 +1571,9 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
     fake_ir_2_reading_value = 100;
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.left_first_change_recorded);
+    CHECK(detector.left_sudden_change_recorded);
     CHECK_FALSE(detector.left_wall_currently_present);
+    CHECK_FALSE(detector.left_wall_presence_final_verdict);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
@@ -1590,8 +1595,9 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
     fake_ir_3_reading_value = 100;
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.right_first_change_recorded);
+    CHECK(detector.right_sudden_change_recorded);
     CHECK_FALSE(detector.right_wall_currently_present);
+    CHECK_FALSE(detector.right_wall_presence_final_verdict);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorIgnoresChangesBelowSlopeThreshold)
@@ -1611,97 +1617,74 @@ TEST(NavigationTests, UpdateSideWallDetectorIgnoresChangesBelowSlopeThreshold)
     fake_ir_2_reading_value = 550;
     update_side_wall_detector(&detector, &readings);
 
-    CHECK_FALSE(detector.left_first_change_recorded);
+    CHECK_FALSE(detector.left_sudden_change_recorded);
 }
 
-TEST(NavigationTests, DetermineWallModeUsesAverageWhenNoTransitionRecorded)
+TEST(NavigationTests, DetermineWallModeUsesCurrentWallState)
 {
     struct side_wall_detector detector{};
 
-    struct side_wall_detection_config cfg{};
-    cfg.reading_threshold = 500;
-
-    set_side_wall_detection_config(cfg);
-
-    detector.left_sum = 600;
-    detector.right_sum = 200;
-    detector.samples_collected = 1;
-
-    CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_LEFT);
-}
-
-TEST(NavigationTests, DetermineWallModeReturnsBothWallsFromAverages)
-{
-    struct side_wall_detector detector{};
-
-    struct side_wall_detection_config cfg{};
-    cfg.reading_threshold = 500;
-
-    set_side_wall_detection_config(cfg);
-
-    detector.left_sum = 700;
-    detector.right_sum = 800;
-    detector.samples_collected = 1;
-
-    CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_BOTH);
-}
-
-TEST(NavigationTests, DetermineWallModeUsesCurrentWallStateAfterTransition)
-{
-    struct side_wall_detector detector{};
-
-    detector.left_first_change_recorded = true;
     detector.left_wall_currently_present = true;
-
-    detector.right_first_change_recorded = true;
     detector.right_wall_currently_present = false;
 
-    CHECK(determine_wall_mode(&detector) == WALL_FEEDBACK_LEFT);
+    LONGS_EQUAL(WALL_FEEDBACK_LEFT, determine_wall_mode(&detector));
 }
 
-TEST(NavigationTests, DetermineWallPresenceReturnsCurrentStateAfterTransition)
+TEST(NavigationTests, DetermineWallModeReturnsBoth)
 {
     struct side_wall_detector detector{};
 
-    detector.left_first_change_recorded = true;
     detector.left_wall_currently_present = true;
+    detector.right_wall_currently_present = true;
 
-    CHECK(determine_wall_presence(&detector, true));
+    LONGS_EQUAL(WALL_FEEDBACK_BOTH, determine_wall_mode(&detector));
 }
 
-TEST(NavigationTests, DetermineWallPresenceReturnsCurrentNoWallStateAfterTransition)
+TEST(NavigationTests, DetermineWallModeReturnsRight)
 {
     struct side_wall_detector detector{};
 
-    detector.left_first_change_recorded = true;
     detector.left_wall_currently_present = false;
+    detector.right_wall_currently_present = true;
 
-    CHECK_FALSE(determine_wall_presence(&detector, true));
+    LONGS_EQUAL(WALL_FEEDBACK_RIGHT, determine_wall_mode(&detector));
 }
 
-TEST(NavigationTests, DetermineWallPresenceUsesAverageWhenNoTransitionRecorded)
+TEST(NavigationTests, DetermineWallModeReturnsNone)
 {
     struct side_wall_detector detector{};
 
-    struct side_wall_detection_config cfg{};
-    cfg.reading_threshold = 500;
+    detector.left_wall_currently_present = false;
+    detector.right_wall_currently_present = false;
 
-    set_side_wall_detection_config(cfg);
+    LONGS_EQUAL(WALL_FEEDBACK_NONE, determine_wall_mode(&detector));
+}
 
-    detector.left_sum = 600;
-    detector.samples_collected = 1;
+TEST(NavigationTests, DetermineWallPresenceReturnsLeftVerdict)
+{
+    struct side_wall_detector detector{};
 
+    detector.left_wall_presence_final_verdict = true;
     CHECK(determine_wall_presence(&detector, true));
-}
 
-TEST(NavigationTests, DetermineWallPresenceReturnsFalseWhenNoSamplesCollected)
-{
-    struct side_wall_detector detector{};
-
+    detector.left_wall_presence_final_verdict = false;
     CHECK_FALSE(determine_wall_presence(&detector, true));
 }
 
-TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEightyPercentOfCell)
+TEST(NavigationTests, DetermineWallPresenceReturnsRightVerdict)
+{
+    struct side_wall_detector detector{};
+
+    detector.right_wall_presence_final_verdict = true;
+
+    CHECK_TRUE(determine_wall_presence(&detector, false));
+
+    detector.right_wall_presence_final_verdict = false;
+
+    CHECK_FALSE(determine_wall_presence(&detector, false));
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEndStep)
 {
     init_mouse_and_maze_params();
 
@@ -1712,8 +1695,8 @@ TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEightyPercentO
 
     struct navigation_params nav{get_navigation_params()};
 
-    fake_encoder_1_ticks = (nav.move_forward_one_cell_target_ticks * 85) / 100;
-    fake_encoder_2_ticks = (nav.move_forward_one_cell_target_ticks * 85) / 100;
+    fake_encoder_1_ticks = (nav.move_forward_one_cell_target_ticks * 95) / 100;
+    fake_encoder_2_ticks = (nav.move_forward_one_cell_target_ticks * 95) / 100;
 
     struct side_wall_detector detector{};
     struct side_wall_readings readings{};
@@ -1724,8 +1707,118 @@ TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEightyPercentO
     fake_ir_2_reading_value = 300;
     update_side_wall_detector(&detector, &readings);
 
-    CHECK_FALSE(detector.left_first_change_recorded);
+    CHECK(detector.left_sudden_change_recorded);
+    CHECK(detector.left_wall_currently_present);
+    CHECK_FALSE(detector.left_wall_presence_final_verdict);
 }
+
+TEST(NavigationTests, UpdateSideWallDetectorAverageCreatesFinalVerdictWhenThresholdExceeded)
+{
+    struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
+    cfg.slope_threshold = 100;
+    cfg.num_detection_samples = 2;
+    cfg.reading_start_offset = 0.0;
+
+    set_side_wall_detection_config(cfg);
+
+    struct side_wall_detector detector{};
+    struct side_wall_readings readings{};
+
+    fake_ir_2_reading_value = 600;
+    fake_ir_3_reading_value = 100;
+
+    update_side_wall_detector(&detector, &readings);
+    update_side_wall_detector(&detector, &readings);
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_TRUE(detector.left_wall_presence_final_verdict);
+    CHECK_TRUE(detector.left_wall_currently_present);
+
+    CHECK_FALSE(detector.right_wall_presence_final_verdict);
+    CHECK_FALSE(detector.right_wall_currently_present);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorAverageDoesNotOverrideLeftSuddenChangeVerdict)
+{
+    init_mouse_and_maze_params();
+
+    struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
+    cfg.slope_threshold = 50;
+    cfg.num_detection_samples = 3;
+    cfg.reading_start_offset = 0.0;
+
+    set_side_wall_detection_config(cfg);
+
+    struct side_wall_detector detector{};
+    struct side_wall_readings readings{};
+
+    /* establish previous reading */
+    fake_ir_2_reading_value = 0;
+    update_side_wall_detector(&detector, &readings);
+
+    /* trigger sudden appearance */
+    fake_ir_2_reading_value = 60;
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_TRUE(detector.left_sudden_change_recorded);
+    CHECK_TRUE(detector.left_wall_presence_final_verdict);
+
+    /* force averaging pass with values below threshold */
+    fake_ir_2_reading_value = 60;
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_TRUE(detector.left_wall_presence_final_verdict);
+    CHECK_TRUE(detector.left_wall_currently_present);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorAverageDoesNotOverrideRightSuddenChangeVerdict)
+{
+    init_mouse_and_maze_params();
+
+    struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
+    cfg.slope_threshold = 50;
+    cfg.num_detection_samples = 3;
+    cfg.reading_start_offset = 0.0;
+
+    set_side_wall_detection_config(cfg);
+
+    struct side_wall_detector detector{};
+    struct side_wall_readings readings{};
+
+    fake_ir_3_reading_value = 0;
+    update_side_wall_detector(&detector, &readings);
+
+    fake_ir_3_reading_value = 60;
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_TRUE(detector.right_sudden_change_recorded);
+    CHECK_TRUE(detector.right_wall_presence_final_verdict);
+
+    fake_ir_3_reading_value = 60;
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_TRUE(detector.right_wall_presence_final_verdict);
+    CHECK_TRUE(detector.right_wall_currently_present);
+}
+
+TEST(NavigationTests, UpdateSideWallDetectorUpdatesReadingsOutput)
+{
+    struct side_wall_detector detector{};
+    struct side_wall_readings readings{};
+
+    fake_ir_2_reading_value = 123;
+    fake_ir_3_reading_value = 456;
+
+    update_side_wall_detector(&detector, &readings);
+
+    LONGS_EQUAL(123u, readings.left);
+    LONGS_EQUAL(456u, readings.right);
+}
+
+
 
 /*----------------------------------------------------------------------------*/
 /* front-wall detection */
