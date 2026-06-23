@@ -1818,7 +1818,32 @@ TEST(NavigationTests, UpdateSideWallDetectorUpdatesReadingsOutput)
     LONGS_EQUAL(456u, readings.right);
 }
 
+TEST(NavigationTests, UpdateSideWallDetectorIgnoresSlopeChangesBeforeStartOffset)
+{
+    init_mouse_and_maze_params();
 
+    struct side_wall_detector detector{};
+
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+    cfg.reading_start_offset = 0.5;
+
+    set_side_wall_detection_config(cfg);
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+
+    struct side_wall_readings readings{};
+
+    fake_ir_2_reading_value = 100;
+    update_side_wall_detector(&detector, &readings);
+
+    fake_ir_2_reading_value = 200;
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_FALSE(detector.left_sudden_change_recorded);
+    CHECK_FALSE(detector.left_wall_presence_final_verdict);
+}
 
 /*----------------------------------------------------------------------------*/
 /* front-wall detection */
