@@ -767,42 +767,44 @@ void update_side_wall_detector(struct side_wall_detector *detector,
         ((uint32_t)navigation_params.move_forward_one_cell_target_ticks * 90 + 50) / 100;
 
     /* slope threshold check */
-    if (detector->have_previous_reading) {
-        if (left_reading > detector->prev_left_reading) {
-            if ((left_reading - detector->prev_left_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->left_sudden_change_recorded = true;
-                detector->left_wall_currently_present = true;
-                if (current_step < end_slope_detection_step) {
-                    detector->left_wall_presence_final_verdict = true;
+    if (current_step >= start_step) {
+        if (detector->have_previous_reading) {
+            if (left_reading > detector->prev_left_reading) {
+                if ((left_reading - detector->prev_left_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->left_sudden_change_recorded = true;
+                    detector->left_wall_currently_present = true;
+                    if (current_step < end_slope_detection_step) {
+                        detector->left_wall_presence_final_verdict = true;
+                    }
+                }
+            } else {
+                if ((detector->prev_left_reading - left_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->left_sudden_change_recorded = true;
+                    detector->left_wall_currently_present = false;
+                    if (current_step < end_slope_detection_step) {
+                        detector->left_wall_presence_final_verdict = false;
+                    }
                 }
             }
-        } else {
-            if ((detector->prev_left_reading - left_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->left_sudden_change_recorded = true;
-                detector->left_wall_currently_present = false;
-                if (current_step < end_slope_detection_step) {
-                    detector->left_wall_presence_final_verdict = false;
+            if (right_reading > detector->prev_right_reading) {
+                if ((right_reading - detector->prev_right_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->right_sudden_change_recorded = true;
+                    detector->right_wall_currently_present = true;
+                    if (current_step < end_slope_detection_step) {
+                        detector->right_wall_presence_final_verdict = true;
+                    }
                 }
-            }
-        }
-        if (right_reading > detector->prev_right_reading) {
-            if ((right_reading - detector->prev_right_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->right_sudden_change_recorded = true;
-                detector->right_wall_currently_present = true;
-                if (current_step < end_slope_detection_step) {
-                    detector->right_wall_presence_final_verdict = true;
-                }
-            }
-        } else {
-            if ((detector->prev_right_reading - right_reading)
-                >= side_wall_detection_config.slope_threshold) {
-                detector->right_sudden_change_recorded = true;
-                detector->right_wall_currently_present = false;
-                if (current_step < end_slope_detection_step) {
-                    detector->right_wall_presence_final_verdict = false;
+            } else {
+                if ((detector->prev_right_reading - right_reading)
+                    >= side_wall_detection_config.slope_threshold) {
+                    detector->right_sudden_change_recorded = true;
+                    detector->right_wall_currently_present = false;
+                    if (current_step < end_slope_detection_step) {
+                        detector->right_wall_presence_final_verdict = false;
+                    }
                 }
             }
         }
