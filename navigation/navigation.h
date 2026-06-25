@@ -151,6 +151,8 @@ struct side_wall_detector {
     uint32_t samples_collected;
     uint32_t prev_left_reading;
     uint32_t prev_right_reading;
+    int32_t left_diff_sum;
+    int32_t right_diff_sum;
     bool have_previous_reading;
     bool left_sudden_change_recorded;
     bool left_wall_currently_present;

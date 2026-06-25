@@ -1364,18 +1364,20 @@ TEST(NavigationTests, InitSideWallDetectorClearsDetector)
 {
     struct side_wall_detector detector{};
 
-    detector.have_previous_reading = true;
-    detector.prev_left_reading = 123;
-    detector.prev_right_reading = 456;
-    detector.left_sudden_change_recorded = true;
-    detector.right_sudden_change_recorded = true;
-    detector.left_wall_presence_final_verdict = true;
-    detector.right_wall_presence_final_verdict = true;
-    detector.left_wall_currently_present = true;
-    detector.right_wall_currently_present = true;
     detector.left_sum = 100;
     detector.right_sum = 200;
     detector.samples_collected = 5;
+    detector.prev_left_reading = 123;
+    detector.prev_right_reading = 456;
+    detector.left_diff_sum = 123;
+    detector.right_diff_sum = 123;
+    detector.have_previous_reading = true;
+    detector.left_sudden_change_recorded = true;
+    detector.left_wall_currently_present = true;
+    detector.left_wall_presence_final_verdict = true;
+    detector.right_sudden_change_recorded = true;
+    detector.right_wall_currently_present = true;
+    detector.right_wall_presence_final_verdict = true;
 
     init_side_wall_detector(&detector);
 
@@ -1559,7 +1561,10 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
     cfg.slope_threshold = 50;
+    cfg.num_detection_samples = 3;
+    cfg.reading_start_offset = 0.0;
 
     set_side_wall_detection_config(cfg);
 
@@ -1568,7 +1573,7 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallDisappearance)
     fake_ir_2_reading_value = 300;
     update_side_wall_detector(&detector, &readings);
 
-    fake_ir_2_reading_value = 100;
+    fake_ir_2_reading_value = 40;
     update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.left_sudden_change_recorded);
@@ -1583,7 +1588,10 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
     struct side_wall_detector detector{};
 
     struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
     cfg.slope_threshold = 50;
+    cfg.num_detection_samples = 3;
+    cfg.reading_start_offset = 0.0;
 
     set_side_wall_detection_config(cfg);
 
@@ -1592,7 +1600,7 @@ TEST(NavigationTests, UpdateSideWallDetectorDetectsRightWallDisappearance)
     fake_ir_3_reading_value = 300;
     update_side_wall_detector(&detector, &readings);
 
-    fake_ir_3_reading_value = 100;
+    fake_ir_3_reading_value = 40;
     update_side_wall_detector(&detector, &readings);
 
     CHECK(detector.right_sudden_change_recorded);
@@ -1689,14 +1697,17 @@ TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEndStep)
     init_mouse_and_maze_params();
 
     struct side_wall_detection_config cfg{};
+    cfg.reading_threshold = 500;
     cfg.slope_threshold = 50;
+    cfg.num_detection_samples = 3;
+    cfg.reading_start_offset = 0.0;
 
     set_side_wall_detection_config(cfg);
 
     struct navigation_params nav{get_navigation_params()};
 
-    fake_encoder_1_ticks = (nav.move_forward_one_cell_target_ticks * 95) / 100;
-    fake_encoder_2_ticks = (nav.move_forward_one_cell_target_ticks * 95) / 100;
+    fake_encoder_1_ticks = (nav.move_forward_one_cell_target_ticks * 65) / 100;
+    fake_encoder_2_ticks = (nav.move_forward_one_cell_target_ticks * 65) / 100;
 
     struct side_wall_detector detector{};
     struct side_wall_readings readings{};
@@ -1707,8 +1718,8 @@ TEST(NavigationTests, UpdateSideWallDetectorIgnoresTransitionAfterEndStep)
     fake_ir_2_reading_value = 300;
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.left_sudden_change_recorded);
-    CHECK(detector.left_wall_currently_present);
+    CHECK_FALSE(detector.left_sudden_change_recorded);
+    CHECK_FALSE(detector.left_wall_currently_present);
     CHECK_FALSE(detector.left_wall_presence_final_verdict);
 }
 
@@ -1759,14 +1770,14 @@ TEST(NavigationTests, UpdateSideWallDetectorAverageDoesNotOverrideLeftSuddenChan
     update_side_wall_detector(&detector, &readings);
 
     /* trigger sudden appearance */
-    fake_ir_2_reading_value = 60;
+    fake_ir_2_reading_value = 170;
     update_side_wall_detector(&detector, &readings);
 
     CHECK_TRUE(detector.left_sudden_change_recorded);
     CHECK_TRUE(detector.left_wall_presence_final_verdict);
 
     /* force averaging pass with values below threshold */
-    fake_ir_2_reading_value = 60;
+    fake_ir_2_reading_value = 170;
     update_side_wall_detector(&detector, &readings);
 
     CHECK_TRUE(detector.left_wall_presence_final_verdict);
@@ -1791,13 +1802,13 @@ TEST(NavigationTests, UpdateSideWallDetectorAverageDoesNotOverrideRightSuddenCha
     fake_ir_3_reading_value = 0;
     update_side_wall_detector(&detector, &readings);
 
-    fake_ir_3_reading_value = 60;
+    fake_ir_3_reading_value = 170;
     update_side_wall_detector(&detector, &readings);
 
     CHECK_TRUE(detector.right_sudden_change_recorded);
     CHECK_TRUE(detector.right_wall_presence_final_verdict);
 
-    fake_ir_3_reading_value = 60;
+    fake_ir_3_reading_value = 170;
     update_side_wall_detector(&detector, &readings);
 
     CHECK_TRUE(detector.right_wall_presence_final_verdict);
@@ -1818,30 +1829,71 @@ TEST(NavigationTests, UpdateSideWallDetectorUpdatesReadingsOutput)
     LONGS_EQUAL(456u, readings.right);
 }
 
-TEST(NavigationTests, UpdateSideWallDetectorIgnoresSlopeChangesBeforeStartOffset)
+TEST(NavigationTests, LeftWallDetectedUsingAccumulatedPositiveDiff)
 {
     init_mouse_and_maze_params();
 
-    struct side_wall_detector detector{};
+    struct side_wall_readings readings{};
 
     struct side_wall_detection_config cfg{};
     cfg.slope_threshold = 50;
     cfg.reading_start_offset = 0.5;
-
     set_side_wall_detection_config(cfg);
+
+    struct side_wall_detector detector{};
+    detector.have_previous_reading = true;
+    detector.prev_left_reading = 100;
 
     fake_encoder_1_ticks = 0;
     fake_encoder_2_ticks = 0;
+    fake_ir_2_reading_value = 140;
+    fake_ir_3_reading_value = 0;
+
+    update_side_wall_detector(&detector, &readings);
+
+    LONGS_EQUAL(40, detector.left_diff_sum);
+    CHECK_FALSE(detector.left_sudden_change_recorded);
+
+    fake_ir_2_reading_value = 180;
+    fake_ir_3_reading_value = 0;
+
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_TRUE(detector.left_sudden_change_recorded);
+    CHECK_TRUE(detector.left_wall_presence_final_verdict);
+}
+
+TEST(NavigationTests, LeftWallDetectedUsingAccumulatedNegativeDiff)
+{
+    init_mouse_and_maze_params();
 
     struct side_wall_readings readings{};
 
-    fake_ir_2_reading_value = 100;
+    struct side_wall_detection_config cfg{};
+    cfg.slope_threshold = 50;
+    cfg.reading_start_offset = 0.5;
+    set_side_wall_detection_config(cfg);
+
+    struct side_wall_detector detector{};
+    detector.have_previous_reading = true;
+    detector.prev_left_reading = 100;
+
+    fake_encoder_1_ticks = 0;
+    fake_encoder_2_ticks = 0;
+    fake_ir_2_reading_value = 70;
+    fake_ir_3_reading_value = 0;
+
     update_side_wall_detector(&detector, &readings);
 
-    fake_ir_2_reading_value = 200;
-    update_side_wall_detector(&detector, &readings);
-
+    LONGS_EQUAL(-30, detector.left_diff_sum);
     CHECK_FALSE(detector.left_sudden_change_recorded);
+
+    fake_ir_2_reading_value = 40;
+    fake_ir_3_reading_value = 0;
+
+    update_side_wall_detector(&detector, &readings);
+
+    CHECK_TRUE(detector.left_sudden_change_recorded);
     CHECK_FALSE(detector.left_wall_presence_final_verdict);
 }
 

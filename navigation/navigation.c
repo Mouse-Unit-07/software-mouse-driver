@@ -32,8 +32,6 @@ static uint32_t round_positive_to_uint32(double value);
 
 static void reset_navigation_state(void);
 static int32_t calculate_move_forward_drift_ticks(struct move_forward_control_config cfg);
-static struct move_forward_calculated_params
-get_move_forward_calculated_params(enum wall_feedback_mode mode);
 static void calculate_side_wall_params(void);
 
 /*----------------------------------------------------------------------------*/
@@ -410,21 +408,6 @@ void init_move_forward_state(struct move_forward_state *state)
     set_wheel_motor_2_direction_forward();
 }
 
-static struct move_forward_calculated_params
-get_move_forward_calculated_params(enum wall_feedback_mode mode)
-{
-    if (mode == WALL_FEEDBACK_NONE) {
-        return no_wall_move_forward_calculated_params;
-    } else if (mode == WALL_FEEDBACK_BOTH) {
-        return both_wall_move_forward_calculated_params;
-    } else {
-        return one_wall_move_forward_calculated_params;
-    }
-
-    struct move_forward_calculated_params params = {0};
-    return params;
-}
-
 bool emergency_stop_detected(void)
 {
     uint32_t threshold = move_forward_common_config.emergency_stop_threshold;
@@ -475,11 +458,10 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
     enum wall_feedback_mode previous_mode = initial_mode;
 
-    struct move_forward_calculated_params calculated_params =
-        get_move_forward_calculated_params(initial_mode);
+    /* TODO: run drift tests to characterize drift when moving forward multiple cells */
+    /* use move_forward_calculated_params structs here */
 
-    while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks
-                                      - calculated_params.drift_ticks)) {
+    while (!is_tick_average_at_target(navigation_params.move_forward_one_cell_target_ticks)) {
         if (emergency_stop_detected()) {
             move_forward_statistics.emergency_stop_occurred = true;
             break;
@@ -493,7 +475,6 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
 
             if (mode != previous_mode) {
                 reset_move_forward_error_history(&state);
-                calculated_params = get_move_forward_calculated_params(mode);
                 previous_mode = mode;
             }
         }
@@ -762,47 +743,48 @@ void update_side_wall_detector(struct side_wall_detector *detector,
         detector->samples_collected++;
     }
 
-    /* TODO: make this end step configurable w/ commands */
+    /* TODO: make this end step and below presence/absence thresholds configurable w/ commands */
     uint32_t end_slope_detection_step =
-        ((uint32_t)navigation_params.move_forward_one_cell_target_ticks * 90 + 50) / 100;
+        ((uint32_t)navigation_params.move_forward_one_cell_target_ticks * 65 + 50) / 100;
 
     /* slope threshold check */
-    if (current_step >= start_step) {
+    int32_t sudden_presence_threshold = 160;
+    int32_t sudden_absence_threshold = 50;
+
+    if (current_step < end_slope_detection_step) {
         if (detector->have_previous_reading) {
-            if (left_reading > detector->prev_left_reading) {
-                if ((left_reading - detector->prev_left_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->left_sudden_change_recorded = true;
-                    detector->left_wall_currently_present = true;
-                    if (current_step < end_slope_detection_step) {
+            detector->left_diff_sum +=
+                (int32_t)left_reading - (int32_t)(detector->prev_left_reading);
+            detector->right_diff_sum +=
+                (int32_t)right_reading - (int32_t)(detector->prev_right_reading);
+
+            if (labs(detector->left_diff_sum) >= side_wall_detection_config.slope_threshold) {
+                if (detector->left_diff_sum > 0) {
+                    if (left_reading >= sudden_presence_threshold) {
+                        detector->left_sudden_change_recorded = true;
+                        detector->left_wall_currently_present = true;
                         detector->left_wall_presence_final_verdict = true;
                     }
-                }
-            } else {
-                if ((detector->prev_left_reading - left_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->left_sudden_change_recorded = true;
-                    detector->left_wall_currently_present = false;
-                    if (current_step < end_slope_detection_step) {
+                } else {
+                    if (left_reading < sudden_absence_threshold) {
+                        detector->left_sudden_change_recorded = true;
+                        detector->left_wall_currently_present = false;
                         detector->left_wall_presence_final_verdict = false;
                     }
                 }
             }
-            if (right_reading > detector->prev_right_reading) {
-                if ((right_reading - detector->prev_right_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->right_sudden_change_recorded = true;
-                    detector->right_wall_currently_present = true;
-                    if (current_step < end_slope_detection_step) {
+
+            if (labs(detector->right_diff_sum) >= side_wall_detection_config.slope_threshold) {
+                if (detector->right_diff_sum > 0) {
+                    if (right_reading >= sudden_presence_threshold) {
+                        detector->right_sudden_change_recorded = true;
+                        detector->right_wall_currently_present = true;
                         detector->right_wall_presence_final_verdict = true;
                     }
-                }
-            } else {
-                if ((detector->prev_right_reading - right_reading)
-                    >= side_wall_detection_config.slope_threshold) {
-                    detector->right_sudden_change_recorded = true;
-                    detector->right_wall_currently_present = false;
-                    if (current_step < end_slope_detection_step) {
+                } else {
+                    if (right_reading < sudden_absence_threshold) {
+                        detector->right_sudden_change_recorded = true;
+                        detector->right_wall_currently_present = false;
                         detector->right_wall_presence_final_verdict = false;
                     }
                 }
