@@ -85,14 +85,12 @@ void set_wheel_motor_2_direction_backward(void)
 
 void set_wheel_motor_1_speed(uint8_t speed)
 {
-    mock().actualCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", speed);
+    mock().actualCall("set_wheel_motor_1_speed").withUnsignedIntParameter("speed", speed);
 }
 
 void set_wheel_motor_2_speed(uint8_t speed)
 {
-    mock().actualCall("set_wheel_motor_2_speed")
-        .withUnsignedIntParameter("speed", speed);
+    mock().actualCall("set_wheel_motor_2_speed").withUnsignedIntParameter("speed", speed);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -532,22 +530,18 @@ TEST(NavigationTests, ApplyMotorOutputSetsMotorSpeeds)
     output.motor_1_speed = 123u;
     output.motor_2_speed = 234u;
 
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 123u);
+    mock().expectOneCall("set_wheel_motor_1_speed").withUnsignedIntParameter("speed", 123u);
 
-    mock().expectOneCall("set_wheel_motor_2_speed")
-        .withUnsignedIntParameter("speed", 234u);
+    mock().expectOneCall("set_wheel_motor_2_speed").withUnsignedIntParameter("speed", 234u);
 
     apply_motor_output(output);
 }
 
 TEST(NavigationTests, StopMotorsSetsMotorSpeedsToZero)
 {
-    mock().expectOneCall("set_wheel_motor_1_speed")
-          .withUnsignedIntParameter("speed", 0u);
+    mock().expectOneCall("set_wheel_motor_1_speed").withUnsignedIntParameter("speed", 0u);
 
-    mock().expectOneCall("set_wheel_motor_2_speed")
-          .withUnsignedIntParameter("speed", 0u);
+    mock().expectOneCall("set_wheel_motor_2_speed").withUnsignedIntParameter("speed", 0u);
 
     stop_motors();
 }
@@ -612,7 +606,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityError)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.velocity_error == 20);
 }
@@ -628,7 +622,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityDerivative)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.velocity_error == 30);
     CHECK(errors.velocity_derivative == 20);
@@ -644,7 +638,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleError)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.angle_error == 30);
 }
@@ -660,7 +654,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleDerivative)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.angle_error == 30);
     CHECK(errors.angle_derivative == 25);
@@ -693,7 +687,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsLeftWallModeCalculatesIrError)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u, &readings)};
 
     LONGS_EQUAL(-50, errors.ir_error);
 }
@@ -707,7 +701,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsRightWallModeCalculatesIrError)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_RIGHT, 500u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_RIGHT, 500u, &readings)};
 
     LONGS_EQUAL(50, errors.ir_error);
 }
@@ -722,7 +716,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsBothWallModeCalculatesIrError)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_BOTH, 0u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_BOTH, 0u, &readings)};
 
     LONGS_EQUAL(-150, errors.ir_error);
 }
@@ -737,7 +731,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesIrDerivative)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_LEFT, 500u, &readings)};
 
     LONGS_EQUAL(-50, errors.ir_error);
     LONGS_EQUAL(-60, errors.ir_derivative);
@@ -753,7 +747,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsNoWallModeLeavesIrErrorZero)
     struct side_wall_readings readings{get_side_wall_readings()};
 
     struct move_forward_errors errors{
-        calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
+            calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
     CHECK(errors.ir_error == 0);
     CHECK(errors.ir_derivative == 0);

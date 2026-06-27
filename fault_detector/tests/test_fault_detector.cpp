@@ -27,20 +27,17 @@ extern "C"
 
 bool is_battery_low(void)
 {
-    return mock().actualCall("is_battery_low")
-        .returnBoolValue();
+    return mock().actualCall("is_battery_low").returnBoolValue();
 }
 
 bool is_current_limit_detection_asserted(void)
 {
-    return mock().actualCall("is_current_limit_detection_asserted")
-        .returnBoolValue();
+    return mock().actualCall("is_current_limit_detection_asserted").returnBoolValue();
 }
 
 uint32_t get_error_log_current_size(void)
 {
-    return mock().actualCall("get_error_log_current_size")
-        .returnUnsignedIntValue();
+    return mock().actualCall("get_error_log_current_size").returnUnsignedIntValue();
 }
 
 void set_error_handler(void (*handler)(void))
@@ -94,12 +91,9 @@ void init_fault_detector_without_cpputest_checks(void)
 
 void set_device_mock_expectations(bool battery_fault, bool cld_fault, uint32_t runtime_fault)
 {
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(battery_fault);
-    mock().expectOneCall("is_current_limit_detection_asserted")
-        .andReturnValue(cld_fault);
-    mock().expectOneCall("get_error_log_current_size")
-        .andReturnValue(runtime_fault);
+    mock().expectOneCall("is_battery_low").andReturnValue(battery_fault);
+    mock().expectOneCall("is_current_limit_detection_asserted").andReturnValue(cld_fault);
+    mock().expectOneCall("get_error_log_current_size").andReturnValue(runtime_fault);
 }
 
 bool is_there_hardware_fault_without_cpputest_checks(void)

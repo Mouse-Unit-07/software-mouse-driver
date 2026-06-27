@@ -52,7 +52,7 @@ uint32_t get_elapsed_global_time_sec(uint32_t start_time_sec)
     if (current_time_sec <= start_time_sec) {
         return 0u;
     }
-    
+
     return current_time_sec - start_time_sec;
 }
 
