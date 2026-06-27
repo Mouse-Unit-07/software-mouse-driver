@@ -27,8 +27,7 @@ extern "C"
 
 uint32_t get_pushbutton_count(void)
 {
-    return mock().actualCall("get_pushbutton_count")
-        .returnUnsignedIntValue();
+    return mock().actualCall("get_pushbutton_count").returnUnsignedIntValue();
 }
 
 void clear_pushbutton_count(void)
@@ -38,21 +37,17 @@ void clear_pushbutton_count(void)
 
 bool is_usart_rx_buffer_empty(void)
 {
-    return mock().actualCall("is_usart_rx_buffer_empty")
-        .returnBoolValue();
+    return mock().actualCall("is_usart_rx_buffer_empty").returnBoolValue();
 }
 
 bool is_usart_rx_buffer_full(void)
 {
-    return mock().actualCall("is_usart_rx_buffer_full")
-        .returnBoolValue();
+    return mock().actualCall("is_usart_rx_buffer_full").returnBoolValue();
 }
 
 char pop_usart_rx_buffer(void)
 {
-    return (char) (mock().actualCall("pop_usart_rx_buffer")
-        .returnIntValue());
-
+    return (char)(mock().actualCall("pop_usart_rx_buffer").returnIntValue());
 }
 
 void clear_usart_rx_buffer(void)
@@ -99,8 +94,7 @@ TEST(UserRequestTests, DeinitUserRequest)
 
 TEST(UserRequestTests, GetUserRequestCallsFunctions)
 {
-    mock().expectOneCall("get_pushbutton_count")
-        .andReturnValue(4);
+    mock().expectOneCall("get_pushbutton_count").andReturnValue(4);
     CHECK(get_button_press_count() == 4);
 }
 
@@ -112,22 +106,19 @@ TEST(UserRequestTests, ClearUserRequestCallsFunctions)
 
 TEST(UserRequestTests, IsCliBufferEmptyCallsFunctions)
 {
-    mock().expectOneCall("is_usart_rx_buffer_empty")
-        .andReturnValue(false);
+    mock().expectOneCall("is_usart_rx_buffer_empty").andReturnValue(false);
     is_cli_buffer_empty();
 }
 
 TEST(UserRequestTests, IsCliBufferFullCallsFunctions)
 {
-    mock().expectOneCall("is_usart_rx_buffer_full")
-        .andReturnValue(false);
+    mock().expectOneCall("is_usart_rx_buffer_full").andReturnValue(false);
     is_cli_buffer_full();
 }
 
 TEST(UserRequestTests, PopCliBufferCallsFunctions)
 {
-    mock().expectOneCall("pop_usart_rx_buffer")
-        .andReturnValue('\0');
+    mock().expectOneCall("pop_usart_rx_buffer").andReturnValue('\0');
     pop_cli_buffer();
 }
 

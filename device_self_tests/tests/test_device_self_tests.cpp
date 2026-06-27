@@ -30,14 +30,12 @@ extern "C"
 /* processor mocks */
 void delay_ms(uint32_t delay_time)
 {
-    mock().actualCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", delay_time);
+    mock().actualCall("delay_ms").withUnsignedIntParameter("delay_time", delay_time);
 }
 
 void delay_us(uint32_t delay_time)
 {
-    mock().actualCall("delay_us")
-        .withUnsignedIntParameter("delay_time", delay_time);
+    mock().actualCall("delay_us").withUnsignedIntParameter("delay_time", delay_time);
 }
 
 void start_timer(void)
@@ -52,8 +50,7 @@ void reset_timer(void)
 
 uint32_t get_current_time_ms(void)
 {
-    return mock().actualCall("get_current_time_ms")
-        .returnUnsignedIntValue();
+    return mock().actualCall("get_current_time_ms").returnUnsignedIntValue();
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -72,42 +69,36 @@ void disable_power(void)
 /* battery comparator mocks */
 bool is_battery_low(void)
 {
-    return mock().actualCall("is_battery_low")
-        .returnBoolValue();
+    return mock().actualCall("is_battery_low").returnBoolValue();
 }
 
 /* ---------------------------------------------------------------------------*/
 /* led mocks */
 void set_led_d1_enabled(bool enabled)
 {
-    mock().actualCall("set_led_d1_enabled")
-        .withBoolParameter("enabled", enabled);
+    mock().actualCall("set_led_d1_enabled").withBoolParameter("enabled", enabled);
 }
 
 void set_led_d2_enabled(bool enabled)
 {
-    mock().actualCall("set_led_d2_enabled")
-        .withBoolParameter("enabled", enabled);
+    mock().actualCall("set_led_d2_enabled").withBoolParameter("enabled", enabled);
 }
 
 void set_led_d3_enabled(bool enabled)
 {
-    mock().actualCall("set_led_d3_enabled")
-        .withBoolParameter("enabled", enabled);
+    mock().actualCall("set_led_d3_enabled").withBoolParameter("enabled", enabled);
 }
 
 void set_led_d4_enabled(bool enabled)
 {
-    mock().actualCall("set_led_d4_enabled")
-        .withBoolParameter("enabled", enabled);
+    mock().actualCall("set_led_d4_enabled").withBoolParameter("enabled", enabled);
 }
 
 /* ---------------------------------------------------------------------------*/
 /* pushbutton mocks */
 uint32_t get_pushbutton_count(void)
 {
-    return mock().actualCall("get_pushbutton_count")
-        .returnUnsignedIntValue();
+    return mock().actualCall("get_pushbutton_count").returnUnsignedIntValue();
 }
 
 void clear_pushbutton_count(void)
@@ -174,14 +165,12 @@ void set_wheel_motor_2_direction_backward(void)
 
 void set_wheel_motor_1_speed(uint8_t speed)
 {
-    mock().actualCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", speed);
+    mock().actualCall("set_wheel_motor_1_speed").withUnsignedIntParameter("speed", speed);
 }
 
 void set_wheel_motor_2_speed(uint8_t speed)
 {
-    mock().actualCall("set_wheel_motor_2_speed")
-        .withUnsignedIntParameter("speed", speed);
+    mock().actualCall("set_wheel_motor_2_speed").withUnsignedIntParameter("speed", speed);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -281,17 +270,12 @@ TEST(DeviceSelfTestsTests, DeinitDeviceSelfTests)
 TEST(DeviceSelfTestsTests, ProcessorTestCallsFunctions)
 {
     mock().expectOneCall("start_timer");
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", 1000u);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(1000);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(0);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 1000u);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(1000);
     mock().expectOneCall("reset_timer");
-    mock().expectOneCall("delay_us")
-        .withUnsignedIntParameter("delay_time", 1000000u);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(1000);
+    mock().expectOneCall("delay_us").withUnsignedIntParameter("delay_time", 1000000u);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(1000);
 
     processor_test();
 }
@@ -299,16 +283,12 @@ TEST(DeviceSelfTestsTests, ProcessorTestCallsFunctions)
 TEST(DeviceSelfTestsTests, BatteryComparatorTestCallsFunctions)
 {
     mock().expectOneCall("disable_power");
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", 2000);
+    mock().expectOneCall("is_battery_low").andReturnValue(false);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 2000);
 
     mock().expectOneCall("enable_power");
-    mock().expectOneCall("is_battery_low")
-        .andReturnValue(false);
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", 2000);
+    mock().expectOneCall("is_battery_low").andReturnValue(false);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 2000);
 
     battery_comparator_test();
 }
@@ -316,39 +296,27 @@ TEST(DeviceSelfTestsTests, BatteryComparatorTestCallsFunctions)
 TEST(DeviceSelfTestsTests, PowerEnablerTestCallsFunctions)
 {
     mock().expectOneCall("disable_power");
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", 10000);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 10000);
 
     mock().expectOneCall("enable_power");
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", 10000);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 10000);
 
     power_enabler_test();
 }
 
 TEST(DeviceSelfTestsTests, LedTestTogglesLeds)
 {
-    mock().expectOneCall("set_led_d1_enabled")
-        .withBoolParameter("enabled", true);
-    mock().expectOneCall("set_led_d2_enabled")
-        .withBoolParameter("enabled", true);
-    mock().expectOneCall("set_led_d3_enabled")
-        .withBoolParameter("enabled", true);
-    mock().expectOneCall("set_led_d4_enabled")
-        .withBoolParameter("enabled", true);
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", 1000);
+    mock().expectOneCall("set_led_d1_enabled").withBoolParameter("enabled", true);
+    mock().expectOneCall("set_led_d2_enabled").withBoolParameter("enabled", true);
+    mock().expectOneCall("set_led_d3_enabled").withBoolParameter("enabled", true);
+    mock().expectOneCall("set_led_d4_enabled").withBoolParameter("enabled", true);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 1000);
 
-    mock().expectOneCall("set_led_d1_enabled")
-        .withBoolParameter("enabled", false);
-    mock().expectOneCall("set_led_d2_enabled")
-        .withBoolParameter("enabled", false);
-    mock().expectOneCall("set_led_d3_enabled")
-        .withBoolParameter("enabled", false);
-    mock().expectOneCall("set_led_d4_enabled")
-        .withBoolParameter("enabled", false);
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", 1000);
+    mock().expectOneCall("set_led_d1_enabled").withBoolParameter("enabled", false);
+    mock().expectOneCall("set_led_d2_enabled").withBoolParameter("enabled", false);
+    mock().expectOneCall("set_led_d3_enabled").withBoolParameter("enabled", false);
+    mock().expectOneCall("set_led_d4_enabled").withBoolParameter("enabled", false);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 1000);
 
     led_test();
 }
@@ -356,14 +324,11 @@ TEST(DeviceSelfTestsTests, LedTestTogglesLeds)
 TEST(DeviceSelfTestsTests, PushbuttonTestCallsFunctions)
 {
     for (int i{0}; i < 5; i++) {
-        mock().expectOneCall("get_pushbutton_count")
-            .andReturnValue(0);
-        mock().expectOneCall("delay_ms")
-            .withUnsignedIntParameter("delay_time", 1000);
+        mock().expectOneCall("get_pushbutton_count").andReturnValue(0);
+        mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 1000);
     }
     mock().expectOneCall("clear_pushbutton_count");
-    mock().expectOneCall("get_pushbutton_count")
-        .andReturnValue(0);
+    mock().expectOneCall("get_pushbutton_count").andReturnValue(0);
 
     pushbutton_test();
 }
@@ -372,11 +337,9 @@ TEST(DeviceSelfTestsTests, MeasureAverageReadingReturnsAverage)
 {
     mock().expectOneCall("reset_timer");
 
-    mock().expectNCalls(3, "get_current_time_ms")
-        .andReturnValue(0);
+    mock().expectNCalls(3, "get_current_time_ms").andReturnValue(0);
 
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(10);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(10);
 
     uint32_t avg = measure_average_reading(10, read_ir_1_sensor);
 
@@ -398,16 +361,13 @@ TEST(DeviceSelfTestsTests, IrSensorsDistanceTestCallsFunctions)
     mock().expectOneCall("start_timer");
 
     for (uint32_t i{0u}; i < (SENSOR_COUNT * DISTANCE_COUNT); i++) {
-        mock().expectOneCall("delay_ms")
-            .withUnsignedIntParameter("delay_time", cfg.setup_delay_ms);
+        mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", cfg.setup_delay_ms);
 
         mock().expectOneCall("reset_timer");
 
-        mock().expectNCalls(2, "get_current_time_ms")
-            .andReturnValue(0);
+        mock().expectNCalls(2, "get_current_time_ms").andReturnValue(0);
 
-        mock().expectOneCall("get_current_time_ms")
-            .andReturnValue(10);
+        mock().expectOneCall("get_current_time_ms").andReturnValue(10);
     }
 
     infrared_sensors_distance_test(cfg);
@@ -429,18 +389,15 @@ TEST(DeviceSelfTestsTests, IrSensorsFreeReadingTestCallsFunctions)
     mock().expectOneCall("start_timer");
 
     for (uint32_t s{0u}; s < SENSOR_COUNT; s++) {
-        mock().expectOneCall("delay_ms")
-            .withUnsignedIntParameter("delay_time", cfg.setup_delay_ms);
+        mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", cfg.setup_delay_ms);
 
         mock().expectOneCall("reset_timer");
 
         /* capture start time */
-        mock().expectNCalls(2, "get_current_time_ms")
-            .andReturnValue(0);
+        mock().expectNCalls(2, "get_current_time_ms").andReturnValue(0);
 
         /* exit timed loop */
-        mock().expectOneCall("get_current_time_ms")
-            .andReturnValue(cfg.time_per_sensor_ms);
+        mock().expectOneCall("get_current_time_ms").andReturnValue(cfg.time_per_sensor_ms);
     }
 
     infrared_sensors_free_reading_test(cfg);
@@ -462,12 +419,10 @@ TEST(DeviceSelfTestsTests, IrSensorsReadSpeedTestCallsFunctions)
         mock().expectOneCall("reset_timer");
 
         /* capture start time */
-        mock().expectNCalls(2, "get_current_time_ms")
-            .andReturnValue(0);
+        mock().expectNCalls(2, "get_current_time_ms").andReturnValue(0);
 
         /* exit timed loop */
-        mock().expectOneCall("get_current_time_ms")
-            .andReturnValue(TIME_PER_SENSOR_MS);
+        mock().expectOneCall("get_current_time_ms").andReturnValue(TIME_PER_SENSOR_MS);
     }
 
     infrared_sensors_read_speed_test(TIME_PER_SENSOR_MS);
@@ -490,23 +445,18 @@ TEST(DeviceSelfTestsTests, MoveUntilEncoderCountReachesTarget)
     cfg.get_ticks = get_encoder_1_ticks;
     cfg.clear_ticks = clear_1_encoder_ticks;
 
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(0);
 
     for (int32_t i{0}; i < (cfg.encoder_target / 2); i++) {
         mock().expectOneCall("set_wheel_motor_1_speed")
-            .withUnsignedIntParameter("speed", cfg.speed);
-        mock().expectOneCall("get_current_time_ms")
-            .andReturnValue(0);
+                .withUnsignedIntParameter("speed", cfg.speed);
+        mock().expectOneCall("get_current_time_ms").andReturnValue(0);
     }
 
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 0u);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
+    mock().expectOneCall("set_wheel_motor_1_speed").withUnsignedIntParameter("speed", 0u);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(0);
 
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", cfg.drift_delay_ms);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", cfg.drift_delay_ms);
 
     move_until_encoder_count(cfg);
 }
@@ -523,21 +473,15 @@ TEST(DeviceSelfTestsTests, MoveUntilEncoderCountBreaksOnTimeout)
     cfg.get_ticks = fake_get_ticks_no_movement;
     cfg.clear_ticks = clear_1_encoder_ticks;
 
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(0);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(0);
 
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", cfg.speed);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(3000);
+    mock().expectOneCall("set_wheel_motor_1_speed").withUnsignedIntParameter("speed", cfg.speed);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(3000);
 
-    mock().expectOneCall("set_wheel_motor_1_speed")
-        .withUnsignedIntParameter("speed", 0u);
-    mock().expectOneCall("get_current_time_ms")
-        .andReturnValue(3000);
+    mock().expectOneCall("set_wheel_motor_1_speed").withUnsignedIntParameter("speed", 0u);
+    mock().expectOneCall("get_current_time_ms").andReturnValue(3000);
 
-    mock().expectOneCall("delay_ms")
-        .withUnsignedIntParameter("delay_time", cfg.drift_delay_ms);
+    mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", cfg.drift_delay_ms);
 
     move_until_encoder_count(cfg);
 }
@@ -635,8 +579,7 @@ TEST(DeviceSelfTestsTests, VacuumTestCallsFunctions)
 {
     for (uint8_t motor_speed = 0u; motor_speed < 255; motor_speed++) {
         mock().expectOneCall("set_vacuum_speed");
-        mock().expectOneCall("delay_ms")
-            .withUnsignedIntParameter("delay_time", 2000);
+        mock().expectOneCall("delay_ms").withUnsignedIntParameter("delay_time", 2000);
     }
 
     vacuum_test();

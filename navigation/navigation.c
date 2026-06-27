@@ -81,14 +81,14 @@ void calculate_mouse_params(struct mouse_physical_params p)
     mouse_params.gear_ratio = p.motor_pinion_gear_teeth / p.wheel_gear_teeth;
 
     mouse_params.encoder_ticks_per_revolution =
-        (p.encoder_events_per_revolution / 4.0) * (1.0 / mouse_params.gear_ratio);
+            (p.encoder_events_per_revolution / 4.0) * (1.0 / mouse_params.gear_ratio);
 
     mouse_params.encoder_ticks_per_millimeter =
-        mouse_params.encoder_ticks_per_revolution / (M_PI * p.wheel_diameter_mm);
+            mouse_params.encoder_ticks_per_revolution / (M_PI * p.wheel_diameter_mm);
 
     mouse_params.encoder_ticks_per_rotation_radian =
-        (mouse_params.encoder_ticks_per_revolution * p.wheel_base_mm)
-        / (2.0 * M_PI * p.wheel_diameter_mm);
+            (mouse_params.encoder_ticks_per_revolution * p.wheel_base_mm)
+            / (2.0 * M_PI * p.wheel_diameter_mm);
 }
 
 void calculate_maze_params(struct maze_physical_params p)
@@ -101,13 +101,13 @@ void calculate_maze_params(struct maze_physical_params p)
 void calculate_navigation_params(void)
 {
     navigation_params.move_forward_one_cell_target_ticks = (int32_t)round_to_int32(
-        maze_params.cell_size_mm * mouse_params.encoder_ticks_per_millimeter);
+            maze_params.cell_size_mm * mouse_params.encoder_ticks_per_millimeter);
 
     navigation_params.rotate_90_degree_target_ticks =
-        (int32_t)round_to_int32((M_PI / 2.0) * mouse_params.encoder_ticks_per_rotation_radian);
+            (int32_t)round_to_int32((M_PI / 2.0) * mouse_params.encoder_ticks_per_rotation_radian);
 
     navigation_params.rotate_180_degree_target_ticks =
-        (int32_t)round_to_int32(M_PI * mouse_params.encoder_ticks_per_rotation_radian);
+            (int32_t)round_to_int32(M_PI * mouse_params.encoder_ticks_per_rotation_radian);
 
     calculate_side_wall_params();
 }
@@ -488,7 +488,7 @@ void move_forward_with_wall_mode(enum wall_feedback_mode initial_mode, bool avoi
         }
 
         struct move_forward_errors errors =
-            calculate_move_forward_errors(&state, mode, cfg.wall_target, &readings);
+                calculate_move_forward_errors(&state, mode, cfg.wall_target, &readings);
         struct motor_output output = calculate_move_forward_motor_output(errors, cfg);
 
         apply_motor_output(output);
@@ -698,9 +698,9 @@ struct motor_output calculate_rotate_motor_output(struct rotate_errors errors,
 /* side-wall detection */
 static void calculate_side_wall_params(void)
 {
-    side_wall_calculated_params.reading_start_offset_ticks =
-        (uint32_t)round_positive_to_uint32(side_wall_detection_config.reading_start_offset
-                                           * navigation_params.move_forward_one_cell_target_ticks);
+    side_wall_calculated_params.reading_start_offset_ticks = (uint32_t)round_positive_to_uint32(
+            side_wall_detection_config.reading_start_offset
+            * navigation_params.move_forward_one_cell_target_ticks);
 }
 
 void init_side_wall_detector(struct side_wall_detector *detector)
@@ -717,7 +717,7 @@ void update_side_wall_detector(struct side_wall_detector *detector,
     readings->right = right_reading;
 
     uint32_t current_step =
-        (uint32_t)((abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2);
+            (uint32_t)((abs(get_encoder_1_ticks()) + abs(get_encoder_2_ticks())) / 2);
     uint32_t start_step = side_wall_calculated_params.reading_start_offset_ticks;
 
     /* sum accumulation and reading threshold check */
@@ -745,7 +745,7 @@ void update_side_wall_detector(struct side_wall_detector *detector,
 
     /* TODO: make this end step and below presence/absence thresholds configurable w/ commands */
     uint32_t end_slope_detection_step =
-        ((uint32_t)navigation_params.move_forward_one_cell_target_ticks * 65 + 50) / 100;
+            ((uint32_t)navigation_params.move_forward_one_cell_target_ticks * 65 + 50) / 100;
 
     /* slope threshold check */
     int32_t sudden_presence_threshold = 160;
@@ -754,9 +754,9 @@ void update_side_wall_detector(struct side_wall_detector *detector,
     if (current_step < end_slope_detection_step) {
         if (detector->have_previous_reading) {
             detector->left_diff_sum +=
-                (int32_t)left_reading - (int32_t)(detector->prev_left_reading);
+                    (int32_t)left_reading - (int32_t)(detector->prev_left_reading);
             detector->right_diff_sum +=
-                (int32_t)right_reading - (int32_t)(detector->prev_right_reading);
+                    (int32_t)right_reading - (int32_t)(detector->prev_right_reading);
 
             if (labs(detector->left_diff_sum) >= side_wall_detection_config.slope_threshold) {
                 if (detector->left_diff_sum > 0) {

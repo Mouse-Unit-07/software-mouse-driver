@@ -10,17 +10,11 @@ add_library(fault_detector_lib STATIC
 
 target_include_directories(fault_detector_lib PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
+    $<TARGET_PROPERTY:runtime_diagnostics_lib,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:device_drivers_lib,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
 target_link_libraries(fault_detector_lib PRIVATE
-    battery_comparator_lib
-    infrared_sensor_lib
-    led_lib
-    magnetic_encoder_lib
-    power_enabler_lib
-    processor_lib
-    pushbutton_lib
-    vacuum_lib
-    wheel_motor_lib
     runtime_diagnostics_lib
+    device_drivers_lib
 )
