@@ -589,11 +589,11 @@ TEST(NavigationTests, InitMoveForwardStateClearsStateAndInitializesHardware)
 
     init_move_forward_state(&state);
 
-    CHECK(state.prev_enc_1_ticks == 0);
-    CHECK(state.prev_enc_2_ticks == 0);
-    CHECK(state.prev_velocity_error == 0);
-    CHECK(state.prev_angle_error == 0);
-    CHECK(state.prev_ir_error == 0);
+    LONGS_EQUAL(0, state.prev_enc_1_ticks);
+    LONGS_EQUAL(0, state.prev_enc_2_ticks);
+    LONGS_EQUAL(0, state.prev_velocity_error);
+    LONGS_EQUAL(0, state.prev_angle_error);
+    LONGS_EQUAL(0, state.prev_ir_error);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityError)
@@ -608,7 +608,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityError)
     struct move_forward_errors errors{
             calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
-    CHECK(errors.velocity_error == 20);
+    LONGS_EQUAL(20, errors.velocity_error);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityDerivative)
@@ -624,8 +624,8 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesVelocityDerivative)
     struct move_forward_errors errors{
             calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
-    CHECK(errors.velocity_error == 30);
-    CHECK(errors.velocity_derivative == 20);
+    LONGS_EQUAL(30, errors.velocity_error);
+    LONGS_EQUAL(20, errors.velocity_derivative);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleError)
@@ -640,7 +640,7 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleError)
     struct move_forward_errors errors{
             calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
-    CHECK(errors.angle_error == 30);
+    LONGS_EQUAL(30, errors.angle_error);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleDerivative)
@@ -656,8 +656,8 @@ TEST(NavigationTests, CalculateMoveForwardErrorsCalculatesAngleDerivative)
     struct move_forward_errors errors{
             calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
-    CHECK(errors.angle_error == 30);
-    CHECK(errors.angle_derivative == 25);
+    LONGS_EQUAL(30, errors.angle_error);
+    LONGS_EQUAL(25, errors.angle_derivative);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsUpdatesState)
@@ -671,11 +671,11 @@ TEST(NavigationTests, CalculateMoveForwardErrorsUpdatesState)
 
     calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings);
 
-    CHECK(state.prev_enc_1_ticks == 70);
-    CHECK(state.prev_enc_2_ticks == 90);
+    LONGS_EQUAL(70, state.prev_enc_1_ticks);
+    LONGS_EQUAL(90, state.prev_enc_2_ticks);
 
-    CHECK(state.prev_velocity_error == 20);
-    CHECK(state.prev_angle_error == 20);
+    LONGS_EQUAL(20, state.prev_velocity_error);
+    LONGS_EQUAL(20, state.prev_angle_error);
 }
 
 TEST(NavigationTests, CalculateMoveForwardErrorsLeftWallModeCalculatesIrError)
@@ -749,8 +749,8 @@ TEST(NavigationTests, CalculateMoveForwardErrorsNoWallModeLeavesIrErrorZero)
     struct move_forward_errors errors{
             calculate_move_forward_errors(&state, WALL_FEEDBACK_NONE, 0u, &readings)};
 
-    CHECK(errors.ir_error == 0);
-    CHECK(errors.ir_derivative == 0);
+    LONGS_EQUAL(0, errors.ir_error);
+    LONGS_EQUAL(0, errors.ir_derivative);
 }
 
 TEST(NavigationTests, CalculateMoveForwardMotorOutputZeroErrorUsesBaseSpeed)
@@ -759,8 +759,8 @@ TEST(NavigationTests, CalculateMoveForwardMotorOutputZeroErrorUsesBaseSpeed)
     struct move_forward_control_config cfg{create_default_control_config()};
     struct motor_output output{calculate_move_forward_motor_output(errors, cfg)};
 
-    CHECK(output.motor_1_speed == 200);
-    CHECK(output.motor_2_speed == 200);
+    LONGS_EQUAL(200U, output.motor_1_speed);
+    LONGS_EQUAL(200U, output.motor_2_speed);
 }
 
 TEST(NavigationTests, CalculateMoveForwardMotorOutputPositiveControl)
@@ -793,7 +793,7 @@ TEST(NavigationTests, CalculateMoveForwardMotorOutputClampsMaximum)
     struct move_forward_control_config cfg{create_default_control_config()};
     struct motor_output output{calculate_move_forward_motor_output(errors, cfg)};
 
-    CHECK(output.motor_1_speed == 255);
+    LONGS_EQUAL(255, output.motor_1_speed);
 }
 
 TEST(NavigationTests, CalculateMoveForwardMotorOutputClampsMinimum)
@@ -805,7 +805,7 @@ TEST(NavigationTests, CalculateMoveForwardMotorOutputClampsMinimum)
     struct move_forward_control_config cfg{create_default_control_config()};
     struct motor_output output{calculate_move_forward_motor_output(errors, cfg)};
 
-    CHECK(output.motor_1_speed == 100);
+    LONGS_EQUAL(100, output.motor_1_speed);
 }
 
 TEST(NavigationTests, ResetMoveForwardErrorHistoryClearsDerivativeState)
@@ -1119,10 +1119,10 @@ TEST(NavigationTests, InitRotateStateClockwiseInitializesHardware)
 
     init_rotate_state(&state, ROTATE_CLOCKWISE);
 
-    CHECK(state.prev_enc_1_ticks == 0);
-    CHECK(state.prev_enc_2_ticks == 0);
-    CHECK(state.prev_velocity_error == 0);
-    CHECK(state.prev_angle_error == 0);
+    LONGS_EQUAL(0, state.prev_enc_1_ticks);
+    LONGS_EQUAL(0, state.prev_enc_2_ticks);
+    LONGS_EQUAL(0, state.prev_velocity_error);
+    LONGS_EQUAL(0, state.prev_angle_error);
 }
 
 TEST(NavigationTests, InitRotateStateCounterClockwiseInitializesHardware)
@@ -1147,7 +1147,7 @@ TEST(NavigationTests, CalculateRotateErrorsCalculatesVelocityError)
 
     struct rotate_errors errors{calculate_rotate_errors(&state)};
 
-    CHECK(errors.velocity_error == 30);
+    LONGS_EQUAL(30, errors.velocity_error);
 }
 
 TEST(NavigationTests, CalculateRotateErrorsCalculatesVelocityDerivative)
@@ -1160,8 +1160,8 @@ TEST(NavigationTests, CalculateRotateErrorsCalculatesVelocityDerivative)
 
     struct rotate_errors errors{calculate_rotate_errors(&state)};
 
-    CHECK(errors.velocity_error == 40);
-    CHECK(errors.velocity_derivative == 30);
+    LONGS_EQUAL(40, errors.velocity_error);
+    LONGS_EQUAL(30, errors.velocity_derivative);
 }
 
 TEST(NavigationTests, CalculateRotateErrorsCalculatesAngleError)
@@ -1173,7 +1173,7 @@ TEST(NavigationTests, CalculateRotateErrorsCalculatesAngleError)
 
     struct rotate_errors errors{calculate_rotate_errors(&state)};
 
-    CHECK(errors.angle_error == 40);
+    LONGS_EQUAL(40, errors.angle_error);
 }
 
 TEST(NavigationTests, CalculateRotateErrorsCalculatesAngleDerivative)
@@ -1186,8 +1186,8 @@ TEST(NavigationTests, CalculateRotateErrorsCalculatesAngleDerivative)
 
     struct rotate_errors errors{calculate_rotate_errors(&state)};
 
-    CHECK(errors.angle_error == 30);
-    CHECK(errors.angle_derivative == 25);
+    LONGS_EQUAL(30, errors.angle_error);
+    LONGS_EQUAL(25, errors.angle_derivative);
 }
 
 TEST(NavigationTests, CalculateRotateErrorsUpdatesState)
@@ -1199,11 +1199,11 @@ TEST(NavigationTests, CalculateRotateErrorsUpdatesState)
 
     calculate_rotate_errors(&state);
 
-    CHECK(state.prev_enc_1_ticks == 70);
-    CHECK(state.prev_enc_2_ticks == 100);
+    LONGS_EQUAL(70, state.prev_enc_1_ticks);
+    LONGS_EQUAL(100, state.prev_enc_2_ticks);
 
-    CHECK(state.prev_velocity_error == 30);
-    CHECK(state.prev_angle_error == 30);
+    LONGS_EQUAL(30, state.prev_velocity_error);
+    LONGS_EQUAL(30, state.prev_angle_error);
 }
 
 TEST(NavigationTests, CalculateRotateErrorsUsesAbsoluteEncoderValues)
@@ -1215,8 +1215,8 @@ TEST(NavigationTests, CalculateRotateErrorsUsesAbsoluteEncoderValues)
 
     struct rotate_errors errors{calculate_rotate_errors(&state)};
 
-    CHECK(errors.velocity_error == 30);
-    CHECK(errors.angle_error == 30);
+    LONGS_EQUAL(30, errors.velocity_error);
+    LONGS_EQUAL(30, errors.angle_error);
 }
 
 TEST(NavigationTests, CalculateRotateMotorOutputZeroErrorUsesBaseSpeed)
@@ -1225,8 +1225,8 @@ TEST(NavigationTests, CalculateRotateMotorOutputZeroErrorUsesBaseSpeed)
     struct rotate_control_config cfg{create_default_rotate_control_config()};
     struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
-    CHECK(output.motor_1_speed == 200);
-    CHECK(output.motor_2_speed == 200);
+    LONGS_EQUAL(200, output.motor_1_speed);
+    LONGS_EQUAL(200, output.motor_2_speed);
 }
 
 TEST(NavigationTests, CalculateRotateMotorOutputPositiveControl)
@@ -1259,7 +1259,7 @@ TEST(NavigationTests, CalculateRotateMotorOutputClampsMaximum)
     struct rotate_control_config cfg{create_default_rotate_control_config()};
     struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
-    CHECK(output.motor_1_speed == 255);
+    LONGS_EQUAL(255, output.motor_1_speed);
 }
 
 TEST(NavigationTests, CalculateRotateMotorOutputClampsMinimum)
@@ -1270,7 +1270,7 @@ TEST(NavigationTests, CalculateRotateMotorOutputClampsMinimum)
     struct rotate_control_config cfg{create_default_rotate_control_config()};
     struct motor_output output{calculate_rotate_motor_output(errors, cfg)};
 
-    CHECK(output.motor_1_speed == 100);
+    LONGS_EQUAL(100u, output.motor_1_speed);
 }
 
 TEST(NavigationTests, RotateStopsMotorsWhenMaxStepsExceeded)
@@ -1430,7 +1430,7 @@ TEST(NavigationTests, UpdateSideWallDetectorDoesNotCollectSamplesBeforeOffset)
     struct side_wall_readings readings{};
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.samples_collected == 0u);
+    LONGS_EQUAL(0u, detector.samples_collected);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorCollectsSamplesAfterOffset)
@@ -1449,9 +1449,9 @@ TEST(NavigationTests, UpdateSideWallDetectorCollectsSamplesAfterOffset)
     struct side_wall_readings readings{};
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.samples_collected == 1u);
-    CHECK(detector.left_sum == 400u);
-    CHECK(detector.right_sum == 500u);
+    LONGS_EQUAL(1u, detector.samples_collected);
+    LONGS_EQUAL(400u, detector.left_sum);
+    LONGS_EQUAL(500u, detector.right_sum);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorStopsCollectingAfterMaximumSamples)
@@ -1471,9 +1471,9 @@ TEST(NavigationTests, UpdateSideWallDetectorStopsCollectingAfterMaximumSamples)
     update_side_wall_detector(&detector, &readings);
     update_side_wall_detector(&detector, &readings);
 
-    CHECK(detector.samples_collected == 3u);
-    CHECK(detector.left_sum == 200u);
-    CHECK(detector.right_sum == 400u);
+    LONGS_EQUAL(3u, detector.samples_collected);
+    LONGS_EQUAL(200u, detector.left_sum);
+    LONGS_EQUAL(400u, detector.right_sum);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues)
@@ -1496,8 +1496,8 @@ TEST(NavigationTests, UpdateSideWallDetectorFirstReadingOnlyStoresPreviousValues
     CHECK_FALSE(detector.left_sudden_change_recorded);
     CHECK_FALSE(detector.right_sudden_change_recorded);
 
-    CHECK(detector.prev_left_reading == 500u);
-    CHECK(detector.prev_right_reading == 600u);
+    LONGS_EQUAL(500u, detector.prev_left_reading);
+    LONGS_EQUAL(600u, detector.prev_right_reading);
 }
 
 TEST(NavigationTests, UpdateSideWallDetectorDetectsLeftWallAppearance)

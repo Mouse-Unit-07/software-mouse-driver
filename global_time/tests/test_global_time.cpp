@@ -99,19 +99,19 @@ TEST(GlobalTimeTests, RestartResetsTimer)
 TEST(GlobalTimeTests, GetCurrentTimeSecFetchesTimeAndDividesMs)
 {
     mock().expectOneCall("get_current_time_ms").andReturnValue(5000u);
-    CHECK(get_current_global_time_sec() == 5u);
+    LONGS_EQUAL(5u, get_current_global_time_sec());
 }
 
 TEST(GlobalTimeTests, GetElapsedTimeSecReturnsDifference)
 {
     mock().expectOneCall("get_current_time_ms").andReturnValue(5000u);
-    CHECK(get_elapsed_global_time_sec(2u) == 3u);
+    LONGS_EQUAL(3u, get_elapsed_global_time_sec(2u));
 }
 
 TEST(GlobalTimeTests, GetElapsedTimeSecDoesNotReturnNegativeValues)
 {
     mock().expectOneCall("get_current_time_ms").andReturnValue(3000u);
-    CHECK(get_elapsed_global_time_sec(5000) == 0u);
+    LONGS_EQUAL(0u, get_elapsed_global_time_sec(5000));
 }
 
 TEST(GlobalTimeTests, DelayMsCallsFunction)
